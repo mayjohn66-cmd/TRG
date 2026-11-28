@@ -89,6 +89,14 @@ func run() -> void:
 			check(atlas.region.has_area() and Rect2(Vector2.ZERO, atlas.atlas.get_size()).encloses(atlas.region), "Imported artwork crop stays inside %s" % role)
 		check(image.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Artwork never intercepts a chapter or entry click")
 		image.free()
+	for role: StringName in [&"roll", &"play_card", &"lawbook", &"supply", &"super"]:
+		var image := Rulebook._art(role, Vector2(40, 40))
+		var atlas := image.texture as AtlasTexture
+		check(atlas != null and atlas.atlas.resource_path == "res://assets/ui/trickcal/rulebook/v05/%s.png" % role, "Unified chapter icon uses approved v05 artwork: %s" % role)
+		if atlas != null:
+			check(atlas.atlas.get_size() == Vector2(256, 256), "Chapter icons remain lightweight at runtime")
+			check(atlas.region.has_area() and Rect2(Vector2.ZERO, atlas.atlas.get_size()).encloses(atlas.region), "Unified chapter crop remains valid")
+		image.free()
 	var defense_sources: Dictionary = {}
 	for item: Dictionary in art_book._ch_capture()["entries"]:
 		if item["title"] in ["방어 카드", "잡기 방어", "공격 방어", "함정 방어", "만능 방어"]:

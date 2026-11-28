@@ -1,0 +1,101 @@
+{
+  "date": "2026-11-28",
+  "generator": "native image_gen.imagegen",
+  "image_model": "not exposed",
+  "reference_family": "rulebook/v04 board + capture",
+  "pixels_modified": false,
+  "files": [
+    {
+      "role": "roll",
+      "prompt": "Create ONE standalone transparent PNG icon for a cute board game's rulebook. The two attached existing icons are mandatory STYLE references ONLY. Match their thick smooth dark forest-brown outline, softly rounded chunky toy proportions, restrained matte three-tone cartoon shading, warm ivory, honey gold, teal and coral palette, one broad highlight, same painted finish and level of simplicity. NOT glossy photorealistic 3D, no fine texture, no thin lines, no tiny details. Must be extremely clear at 40px inside a cream circular pedestal that the game draws separately: DO NOT draw any pedestal, border, backing disc, glow or shadow outside the object. Single centered subject, square composition, object occupies about 75-80% with ample transparent margin, no cropping, no lettering, numbers, watermark or background. Subject: ONE thick ivory six-sided gaming die viewed in a simple three-quarter perspective. Bold dark brown circular recessed pips: ONE pip on top, TWO on the left face, THREE on the right face. Clearly separated faces and physically plausible pip spacing. A small broad teal curved roll swoosh below, kept subordinate. Same outline thickness and soft ivory shading as the reference's board tiles.",
+      "output_hint": "Generated images are saved to C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3 as C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9e784897-a0e1-435c-8f55-f10736afce3b.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source_path": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9e784897-a0e1-435c-8f55-f10736afce3b.png",
+      "sha256": "abdba567f39d6f201bde8ce1ba08f9e8b7548a3af733403ce3ab5507204e70c2",
+      "source_dimensions": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0.182615629984051,
+        0.139553429027113,
+        0.623604465709729,
+        0.766347687400319
+      ]
+    },
+    {
+      "role": "play_card",
+      "prompt": "Create ONE standalone transparent PNG icon for a cute board game's rulebook. The two attached existing icons are mandatory STYLE references ONLY. Match their thick smooth dark forest-brown outline, softly rounded chunky toy proportions, restrained matte three-tone cartoon shading, warm ivory, honey gold, teal and coral palette, one broad highlight, same painted finish and level of simplicity. NOT glossy photorealistic 3D, no fine texture, no thin lines, no tiny details. Must be extremely clear at 40px inside a cream circular pedestal that the game draws separately: DO NOT draw any pedestal, border, backing disc, glow or shadow outside the object. Single centered subject, square composition, object occupies about 75-80% with ample transparent margin, no cropping, no lettering, numbers, watermark or background. Subject: ONE tilted thick ivory playing card with rounded corners, a single bold coral meeple-shaped symbol centered on its face and two tiny gold triangular corner marks; a small simple ivory mitten hand holding its bottom left corner. A single short teal motion stroke to the right. Keep the hand very simplified, not anatomical, and the card unmistakable at 40px.",
+      "output_hint": "Generated images are saved to C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3 as C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-bbd49420-af95-44be-b7b9-6cc2c759c4d4.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source_path": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-bbd49420-af95-44be-b7b9-6cc2c759c4d4.png",
+      "sha256": "103a50ac42ef16a4d0ad1d15939ced69e534a00e44efc62a5c2bbdb1f604a384",
+      "source_dimensions": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0.110047846889952,
+        0.114832535885167,
+        0.800637958532695,
+        0.82615629984051
+      ]
+    },
+    {
+      "role": "lawbook",
+      "prompt": "Create ONE standalone transparent PNG icon for a cute board game's rulebook. The two attached existing icons are mandatory STYLE references ONLY. Match their thick smooth dark forest-brown outline, softly rounded chunky toy proportions, restrained matte three-tone cartoon shading, warm ivory, honey gold, teal and coral palette, one broad highlight, same painted finish and level of simplicity. NOT glossy photorealistic 3D, no fine texture, no thin lines, no tiny details. Must be extremely clear at 40px inside a cream circular pedestal that the game draws separately: DO NOT draw any pedestal, border, backing disc, glow or shadow outside the object. Single centered subject, square composition, object occupies about 75-80% with ample transparent margin, no cropping, no lettering, numbers, watermark or background. Subject: ONE closed chunky emerald-green rulebook at a slight three-quarter tilt. Its front cover has ONE large simple raised gold balance-scale emblem with two broad shallow pans; thick clear central mast, no fine chains. A single ivory bookmark at bottom, two broad gold spine bands, cream page block. Simplify all decoration so the scales read at 40px. No fine border patterns, no lettering. Match the provided board reference's matte toy shading and dark brown outline exactly.",
+      "output_hint": "Generated images are saved to C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3 as C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ea94d378-2c08-4a34-ad44-3907227f414d.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source_path": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ea94d378-2c08-4a34-ad44-3907227f414d.png",
+      "sha256": "e0576a1992afa909318986adeb4dd8592d417451713ea89ad154e2ff7284036f",
+      "source_dimensions": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0.136363636363636,
+        0.0933014354066986,
+        0.715311004784689,
+        0.823763955342903
+      ]
+    },
+    {
+      "role": "supply",
+      "prompt": "Create ONE standalone transparent PNG icon for a cute board game's rulebook. The two attached existing icons are mandatory STYLE references ONLY. Match their thick smooth dark forest-brown outline, softly rounded chunky toy proportions, restrained matte three-tone cartoon shading, warm ivory, honey gold, teal and coral palette, one broad highlight, same painted finish and level of simplicity. NOT glossy photorealistic 3D, no fine texture, no thin lines, no tiny details. Must be extremely clear at 40px inside a cream circular pedestal that the game draws separately: DO NOT draw any pedestal, border, backing disc, glow or shadow outside the object. Single centered subject, square composition, object occupies about 75-80% with ample transparent margin, no cropping, no lettering, numbers, watermark or background. Subject: ONE squat open honey-brown wooden supply crate with two wide horizontal slats and thick rounded corners. Inside are just ONE large blank ivory card with gold trim and ONE small green potion bottle with a gold cork. Three large clearly separated forms, no extra contents, no tiny nails, no wood grain, no label, no ribbon. Same simple matte shading and bold outlines as the references. The crate should occupy the same overall visual footprint as the reference board.",
+      "output_hint": "Generated images are saved to C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3 as C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ee1136b6-d7eb-4c2a-b50a-48e93b6dba6b.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source_path": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ee1136b6-d7eb-4c2a-b50a-48e93b6dba6b.png",
+      "sha256": "ff5a52e4955fdcfc286d10e5c6ba26204bf004c08ac97763798bd451bd07f9c3",
+      "source_dimensions": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0.114035087719298,
+        0.105263157894737,
+        0.764752791068581,
+        0.797448165869219
+      ]
+    },
+    {
+      "role": "super",
+      "prompt": "Create ONE standalone transparent PNG icon for a cute board game's rulebook. The two attached existing icons are mandatory STYLE references ONLY. Match their thick smooth dark forest-brown outline, softly rounded chunky toy proportions, restrained matte three-tone cartoon shading, warm ivory, honey gold, teal and coral palette, one broad highlight, same painted finish and level of simplicity. NOT glossy photorealistic 3D, no fine texture, no thin lines, no tiny details. Must be extremely clear at 40px inside a cream circular pedestal that the game draws separately: DO NOT draw any pedestal, border, backing disc, glow or shadow outside the object. Single centered subject, square composition, object occupies about 75-80% with ample transparent margin, no cropping, no lettering, numbers, watermark or background. Subject: ONE large chunky lavender-purple crystal with just three broad softly beveled facets, paired with ONE thick honey-gold lightning bolt running diagonally across its front. At its base ONE very small ivory die with just three dark brown pips on its visible face. Strong compact emblem silhouette, not a tall skinny lightning bolt. No shards flying, no impact marks, no glows or extra jewels. Match the reference board's matte shading and dark forest-brown outline, avoid glitter or sharp realistic cut-glass rendering.",
+      "output_hint": "Generated images are saved to C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3 as C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-51e7a36c-2093-4295-9e9c-76547d3611b9.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source_path": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-51e7a36c-2093-4295-9e9c-76547d3611b9.png",
+      "sha256": "9cdefe1f3bdc3417a103bf20f51b11cd2697b6789779831bf72144c84e96b4e1",
+      "source_dimensions": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0.182615629984051,
+        0.118022328548644,
+        0.615629984051037,
+        0.767942583732057
+      ]
+    }
+  ],
+  "runtime_import": {
+    "size_limit": 256,
+    "quality": 0.85,
+    "mipmaps": true
+  },
+  "transparent_background": true,
+  "qa": "Accepted after native generation and actual Godot 40px chapter rail / 132px detail captures; preserves v04 board and pawn artwork; no raster pixel edits."
+}
