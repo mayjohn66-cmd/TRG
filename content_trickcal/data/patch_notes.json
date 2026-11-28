@@ -174,6 +174,11 @@
        "ko": "규칙 도감이 보기 편해졌어요: [카드]는 위쪽 분류 버튼(전체·방어·발동·함정·소환)으로 골라 보고, 자세히 보기 창은 화면 전체가 어두워지며 오른쪽 위 [×]로도 닫혀요. [기록 백업/복구] 창에도 [×]가 생기고 바깥을 누르면 닫혀요. [특수 칸] 작은 보드판이 출발선까지 한눈에 보여요",
        "en": "The Rulebook is easier to browse: filter [Cards] with the category buttons on top (All · Defense · Activate · Trap · Summon); the detail window now dims the whole screen and also closes with the [×] at its top right. The [Backup/Restore] window has an [×] too and closes when you tap outside. The small board in [Special Spaces] now shows everything down to the start line",
        "ja": "ルール図鑑が見やすくなりました：［カード］は上の分類ボタン（すべて・防御・発動・罠・召喚）で絞り込めます。詳細ウィンドウは画面全体が暗くなり、右上の［×］でも閉じられます。［記録のバックアップ/復元］にも［×］が付き、外側をタップすると閉じます。［特殊マス］の小さなボードがスタートラインまで一目で見えます"
+      },
+      {
+       "ko": "규칙 도감의 여백과 정렬을 다듬었어요: 카드·법전 칸 사이가 넓어지고, [보드판]은 큰 2열 카드로, [특수 칸]은 작은 보드판과 범례가 나란히 보여요",
+       "en": "Polished the Rulebook's spacing and alignment: cards and laws have more room between them, [Boards] uses large two-column cards, and [Special Spaces] shows the small board and its legend side by side",
+       "ja": "ルール図鑑の余白と配置を整えました：カード・法典の間隔が広がり、［ボード］は大きな2列カードに、［特殊マス］は小さなボードと凡例が横並びで表示されます"
       }
      ]
     },
