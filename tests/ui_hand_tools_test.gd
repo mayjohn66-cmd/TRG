@@ -107,6 +107,7 @@ func run() -> void:
 	await fixture()
 	await warmup()
 	await pirate_buttons()
+	await bot_pirate_no_stop()
 	await holdem_exchange()
 	await yacht_case()
 	await gated_take_out_labels()
@@ -332,6 +333,36 @@ func pirate_buttons() -> void:
 		if rolls.size() == 1:
 			var stuck: Array = rolls[0].get("details", {}).get("holes", [])
 			check(not stuck.is_empty() and int(stuck[-1]) == target, "누른 구멍에 칼이 꽂힌다 (%s / %d)" % [str(stuck), target])
+	await next_turn()
+
+
+## 제보(일본어, 1.3.1): 컴퓨터가 해적 룰렛을 이어 꽂는 중에 오른쪽 [멈추기]가 떠서, 눌러 버리면 컴퓨터의 룰렛이 멈췄다.
+func bot_pirate_no_stop() -> void:
+	await give(&"DICE_PIRATE")
+	var bot_id: int = board.manager.current_player_id()
+	var saved_ai: bool = board.ai_mode
+	var saved_local: int = board.local_player_id
+	board.ai_mode = true
+	board.local_player_id = bot_id % 4 + 1  # 지금 차례(컴퓨터)가 아닌 사람 자리
+	var tool: BaseJudgmentTool = board.state.tools[bot_id]
+	for _try: int in 20:
+		if tool.has_pending_state() or board.manager.current_player_id() != bot_id:
+			break
+		if board.manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+			board.manager.act(&"proceed", {"player_id": bot_id})
+		board.manager.act(&"roll", {"player_id": bot_id})
+	await frames(2)
+	if not tool.has_pending_state() or board.manager.current_player_id() != bot_id:
+		check(false, "준비: 컴퓨터가 칼을 꽂아 누적이 남은 상태를 만들지 못했다")
+	else:
+		board._refresh_all()
+		await frames(2)
+		check(not board._stop_button.is_visible_in_tree() or board._stop_button.disabled, "컴퓨터 차례에는 [멈추기]가 보이지 않는다")
+		board._on_stop_pressed()
+		await frames(2)
+		check(tool.has_pending_state() and board.manager.current_player_id() == bot_id and board.manager.current_state == TurnManager.State.PHASE_ROLL_WAIT, "눌러도 컴퓨터의 해적 룰렛은 멈추지 않는다")
+	board.ai_mode = saved_ai
+	board.local_player_id = saved_local
 	await next_turn()
 
 

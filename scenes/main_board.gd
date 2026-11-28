@@ -7748,12 +7748,14 @@ func _refresh_controls() -> void:
 	else:
 		_set_gun_buttons(false)
 		_roll_button.text = _roll_button_label(tool)
-		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id) and not (tool is ToolHoldem)  # 야추·블랙잭은 스테이지에, 홀덤은 교환 창에 자기 확정 버튼이 있다
+		# 내 차례에만 (제보: 컴퓨터가 해적 룰렛을 이어 꽂는 중에 오른쪽 [멈추기]가 떠서 눌러 버리면 컴퓨터의 룰렛이 멈췄다)
+		var my_stop: bool = not _is_bot_turn() and player_id == _dock_owner()
+		_stop_button.visible = can_stop and my_stop and not _is_stage_tool(tool.tool_id) and not (tool is ToolHoldem)  # 야추·블랙잭은 스테이지에, 홀덤은 교환 창에 자기 확정 버튼이 있다
 		# 1.3.1 정리: 오른쪽 버튼 줄 대신 굴리기(칼 꽂기) 버튼 바로 옆에, 누적 칸을 붙여서 ("멈추기 +6칸")
 		var total: int = int(tool.get("accumulated")) if tool.get("accumulated") != null else 0
 		_stop_button.text = L10n.tf("멈추기 +%d칸", [total]) if total > 0 else L10n.t("멈추고 이동 확정")
 		_place_stop_beside_roll(_stop_button.visible)
-		_stop_button.disabled = false
+		_stop_button.disabled = not my_stop
 		_stop_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		_stop_button.modulate = Color.WHITE
 	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
@@ -8455,7 +8457,7 @@ func _roll_by_key() -> void:
 
 
 func _on_stop_pressed() -> void:
-	if _stop_button.disabled or _roll_pad.active:
+	if _stop_button.disabled or _roll_pad.active or _is_bot_turn() or manager.is_game_over or manager.current_player_id() != _dock_owner():
 		return  # 리볼버가 철컥하는 연출 중(버튼 모양은 그대로 둔다)에는 정지를 받지 않는다
 	_act(&"stop")
 

@@ -217,6 +217,11 @@
        "ko": "[정령산]을 한 판 한 뒤 다른 보드판으로 새 게임을 시작하면 게임 화면 일부가 제대로 준비되지 않던 문제를 고쳤어요",
        "en": "Fixed part of the game screen not being set up correctly when starting a new game on another board right after a [Spirit Mountain] match",
        "ja": "［精霊山］を1回遊んだあと別のボードで新しいゲームを始めると、ゲーム画面の一部が正しく準備されなかった問題を修正しました"
+      },
+      {
+       "ko": "컴퓨터가 [해적 룰렛]을 이어 꽂는 중에 오른쪽에 [멈추기] 버튼이 떠서, 누르면 컴퓨터의 룰렛이 멈춰 버리던 문제를 고쳤어요. 이제 [멈추기]는 내 차례에만 보여요 (제보 감사합니다!)",
+       "en": "Fixed a [Stop] button appearing while a CPU was playing [Pirate Roulette], which let you stop the CPU's roulette. [Stop] now only appears on your own turn (thanks for the report!)",
+       "ja": "CPUが［海賊ルーレット］を続けている最中に右側に［止める］ボタンが出て、押すとCPUのルーレットを止められてしまう問題を修正しました。［止める］は自分の手番にだけ表示されます（ご報告ありがとうございます！）"
       }
      ]
     }
