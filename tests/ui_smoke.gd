@@ -472,6 +472,9 @@ func _check_fog_of_war() -> void:
 				continue
 			_fog_checks += 1
 			var mark_text: String = _board._trap_tooltip(attachment)  # 타일 위 글자 배지는 없애고 툴팁으로만 알린다
+			if SuperStatus.blind_active(_board.state):
+				_assert(mark_text == "[? 수상한 함정]", "눈먼 자의 도시 동안은 설치한 사람도 함정을 모른다 (%s)" % mark_text)
+				continue  # 초증강 [눈먼 자의 도시]: 내 함정도 일부러 가린다 (배포 CI 무작위 판에서 걸림)
 			if attachment.owner_id == MainBoard.HUMAN_ID or MatchRules.trap_reveal(_board.state) or attachment.always_revealed:  # 광란의 지뢰밭 지뢰는 비공개 규칙에서도 보인다
 				_assert(not mark_text.contains("수상한 함정") and mark_text.contains(_board._attachment_name(attachment.attachment_id)), "내 함정·공개 규칙의 함정은 이름이 보여야 한다 (%s)" % mark_text)
 			else:
