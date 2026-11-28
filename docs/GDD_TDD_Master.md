@@ -7,6 +7,7 @@
 >
 > - **규칙 충돌 · 연출 순서 명세:** [`EDGE_CASE_SPEC.md`](EDGE_CASE_SPEC.md)
 > - **연출 · 모션 · 카메라 기획서 (도구 21종 소품 동작):** [`PRESENTATION_SPEC.md`](PRESENTATION_SPEC.md)
+> - **전수 아이콘 · 일러스트 · 개별 연출 백과사전 (증강 96 · 카드 53 · 기물 33 · 법전 12):** [`CONTENT_VISUAL_FX_CATALOG.md`](CONTENT_VISUAL_FX_CATALOG.md)
 > - **규칙 도감 기획 및 검수 명세서 (11개 장):** [`RULEBOOK_SPEC.md`](RULEBOOK_SPEC.md)
 > - **프로젝트 요약 · 협업 파이프라인 · 변천사:** [`FINAL_GAME_DESIGN_AND_HISTORY.md`](FINAL_GAME_DESIGN_AND_HISTORY.md)
 > - **시간순 개발 의사결정 아카이브 (`6.1 ~ 7.139`):** [`DEV_HISTORY.md`](DEV_HISTORY.md)

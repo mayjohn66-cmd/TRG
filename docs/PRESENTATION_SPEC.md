@@ -4,6 +4,7 @@
 > **목적:** 구현 담당(개발·3D·아트 AI 및 기여자)이 **소품의 물리적 작동 방식, 카메라 전환, 조작→결과 연속성, 타이밍, 퇴장 순서**를 임의로 해석하거나 소품을 단순 배경 장식으로 처리하지 않도록 못 박는 **공식 연출 기준서**다.
 >
 > - **기본 규칙 · 데이터 표:** [`GDD_TDD_Master.md`](GDD_TDD_Master.md)
+> - **전수 콘텐츠 아이콘 · 개별 연출 백과사전 (증강 96 · 카드 53 · 기물 33 · 법전 12):** [`CONTENT_VISUAL_FX_CATALOG.md`](CONTENT_VISUAL_FX_CATALOG.md)
 > - **규칙 충돌 · FIFO 큐 경계:** [`EDGE_CASE_SPEC.md`](EDGE_CASE_SPEC.md)
 > - **3D 폴리곤 상한 · UI 좌표 규격:** [`visual/Visual_Asset_Guide_Draft.md`](visual/Visual_Asset_Guide_Draft.md)
 > - **다른 AI 작업 지시판:** [`AI_HANDOFF.md`](AI_HANDOFF.md)
