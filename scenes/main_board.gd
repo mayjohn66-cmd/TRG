@@ -15225,6 +15225,8 @@ func _apply_card_zoom(weight: float) -> void:
 	_pawn_layer.scale = Vector2.ONE * zoom
 	_board_layer.position = offset
 	_pawn_layer.position = offset
+	if _draw_fx != null:
+		_draw_fx.set_deck_view(offset, zoom, _off_center)  # 판 옆 카드 더미도 같은 변환으로 (줌인 때 따로 떠 보이지 않게)
 
 
 ## 지금 보이는 화면이 디자인 크기(1366x768)보다 몇 배 넓거나 높은가 (보드 좌표 기준, 1 이상).

@@ -257,6 +257,11 @@
        "ko": "규칙 도감의 자세히 보기 창에서 [이전]·[다음]·[닫기]·[×] 버튼이 눌리지 않던 문제를 고쳤어요",
        "en": "Fixed the [Prev], [Next], [Close] and [×] buttons not responding in the Rulebook detail window",
        "ja": "ルール図鑑の詳細ウィンドウで［前へ］［次へ］［閉じる］［×］が押せなかった問題を修正しました"
+      },
+      {
+       "ko": "야추·블랙잭·핀볼처럼 보드를 가까이 당겨 보는 연출에서 카드 더미가 화면에 혼자 떠 있던 문제를 고쳤어요",
+       "en": "Fixed the card deck floating on screen during close-up board views such as Yacht, Blackjack and Pinball",
+       "ja": "ヨット・ブラックジャック・ピンボールなどボードを寄せて見る演出で、カードの山が画面に浮いて見えていた問題を修正しました"
       }
      ]
     }

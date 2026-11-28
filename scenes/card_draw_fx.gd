@@ -127,9 +127,24 @@ func release(player_id: int) -> void:
 	pending[player_id] = maxi(int(pending.get(player_id,0))-1,0)
 
 
+## 판을 당겨 보는 연출(카드 시점·알까기 시점)에서 보드와 같은 변환: 보드 층 위치(offset)·배율(zoom)·배율 1일 때 보드 층 위치(origin).
+## 카드 더미는 판 옆 테이블에 놓인 물건이라 판과 함께 커지고 밀려나야 한다 (화면에 그대로 남으면 따로 떠 보인다, 1.3.1).
+var _view_offset := Vector2.ZERO
+var _view_origin := Vector2.ZERO
+var _view_zoom := 1.0
+
+
+func set_deck_view(offset: Vector2, zoom: float, origin: Vector2) -> void:
+	_view_offset = offset
+	_view_zoom = zoom
+	_view_origin = origin
+	place_deck()
+
+
 func place_deck() -> void:
 	if _deck != null:
-		_deck.position = deck_position
+		_deck.position = _view_offset + (deck_position - _view_origin) * _view_zoom
+		_deck.scale = Vector2.ONE * _view_zoom
 
 
 func set_deck_visible(shown: bool) -> void:

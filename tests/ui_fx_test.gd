@@ -416,6 +416,16 @@ func _test_card_draw_fx() -> void:
 	var outline: PackedVector2Array = BoardSkin.outline(_board._surface_project,_board._off_center)
 	for corner: Vector2 in CardDrawFX.deck_outline():
 		_expect(not Geometry2D.is_point_in_polygon(deck.global_position+corner,outline),"deck footprint stays clear of the board")
+	# 1.3.1: 판을 당겨 보는 연출(카드 시점)에서 카드 더미도 보드와 같은 변환으로 움직인다 (화면에 그대로 떠 있지 않게)
+	var rest_at: Vector2 = deck.position
+	var board_point: Vector2 = _board._board_layer.get_global_transform()*Vector2(100,100)
+	var deck_from_board: Vector2 = deck.global_position-board_point
+	_board._apply_card_zoom(1.0)
+	var zoom: float = _board._board_layer.scale.x
+	_expect(zoom>1.01 and is_equal_approx(deck.scale.x,zoom),"card view zoom scales the deck with the board (%.2f vs %.2f)" % [deck.scale.x,zoom])
+	_expect((deck.global_position-(_board._board_layer.get_global_transform()*Vector2(100,100))).distance_to(deck_from_board*zoom)<1.0,"deck keeps its place beside the zoomed board")
+	_board._apply_card_zoom(0.0)
+	_expect(deck.position.distance_to(rest_at)<0.01 and is_equal_approx(deck.scale.x,1.0),"deck returns when the zoom ends")
 	var flipped: bool = false
 	var shown_since: float = -1.0
 	var shown_duration: float = 0.0
