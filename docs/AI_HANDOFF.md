@@ -27,6 +27,7 @@
 | **3** | **3D 모델 폴리곤 · 저용량 상한** | 런타임 상한: **S급 `≤ 1,500 tris / 30 KB` · M급 `≤ 3,500 tris / 80 KB` · L급 `≤ 6,500 tris (최대 8,000) / 200 KB`** · 전체 번들 `≤ 150,000 tris / 4.0 MiB` · 텍스처 `≤ 512px`. **원본 `.glb` 직접 참조 금지**(`optimized/vN/` 압축 `.scn`/`.res`만 참조), `SubViewport ≤ 1.5×` · `MSAA_2X` 상한 · 비활성 `32×32` 파킹 ([`Visual_Asset_Guide_Draft.md` 6절](visual/Visual_Asset_Guide_Draft.md#6-3d-모델링-폴리곤-수--저용량-운영-상한-규격-131-전수-계측)) |
 | **4** | **UI 버튼 크기 · 배치 좌표 고정** | 기준 해상도 **`1366 × 768`**(`SAFE_MARGIN = 12px`)의 지정 좌표·크기, 모바일 최소 버튼 높이 **`48px`**(메뉴·리롤 `64px`), `FontSizes.LADDER` 폰트 사다리를 임의로 바꾸지 않는다 ([`Visual_Asset_Guide_Draft.md` 7절](visual/Visual_Asset_Guide_Draft.md#7-화면별-ui-버튼-크기--배치-좌표-고정-규격-1366768)) |
 | **5** | **확정 아트 · 카드 용어 · 검증 게이트** | 생떼 카드는 4대 분류(`방어·발동·함정·소환`)와 통일 용어 규약([`GDD_TDD_Master.md` 4.4절](GDD_TDD_Master.md#44-생떼-카드-52종--기본-덱-89장-통일-명세))을 따르고, 확정 아트 5건([`Visual_Asset_Guide_Draft.md` 6.3절](visual/Visual_Asset_Guide_Draft.md#63-사용자-확정-3d--아트-회귀-방지-고정-사항-131-인계-확정))을 임의로 되돌리지 않는다. 작업 완료 전 `lowpoly_models_test` · `ui_web_3d_budget_test` · `ui_overlap_audit` 통과 필수 |
+| **6** | **연출 물리 인과 (장식 소품 금지)** | 화면의 3D 소품(야추 컵·핀볼 손잡이·다트 과녁·캡슐 레버·가마솥 등)은 정지 배경 장식이 아니라 결과물을 실제로 내보내는 작동 주체로 구현한다. 도구 21종·특수 발판·컷신의 동작과 금지 안티패턴은 [`PRESENTATION_SPEC.md`](PRESENTATION_SPEC.md)를 따른다 |
 
 ---
 
@@ -38,10 +39,29 @@
 
 | ID | 우선순위 | 상태 | 대상 역할 | 대상 브랜치 | 요약 |
 |---|---|---|---|---|---|
+| **`HANDOFF-008`** | `P1` | `대기(TODO)` | 개발 · 3D AI | `dev` / `next` | 야추 다이스 컵 쏟기 연출 교정 (정지 장식 컵 → 흔들고 기울여 입구에서 쏟아내기) |
 | **`HANDOFF-002`** | `P1` | `대기(TODO)` | 개발 AI | `dev` / `next` | 생떼 카드 52종 인게임 도감·툴팁 문구 통일화 |
 | **`HANDOFF-006`** | `P2` | `대기(TODO)` | 개발 / QA AI | `dev` | `1.3.1` 화면 변경 이후 어긋난 개별 범위 CI 시험 3종 정비 |
-| **`HANDOFF-005`** | `P2` | `보류(결정 대기)` | 기획 담당 → 개발 AI | `dev` | 처치 장면 리벤지 `+N` 팝업·`방어!` 배지 완전 대기 여부 확정 |
 | **`HANDOFF-003`** | `P2` | `보류(기획 대기)` | 개발 · 3D 아트 AI | `next` | `1.4` 신규 판정 도구(`노래방 점수판`, `후쿠비키` 등) 기획 확정 전 선구현 금지 |
+
+---
+
+### `[HANDOFF-008]` 야추 다이스 컵 쏟기 연출 교정 (장식 컵 제거 · 실제 흔들기/쏟기 구현)
+
+- **대상 역할 / 브랜치:** 개발 · 3D 연출 AI (`scenes/yacht_case_3d.gd` · `scenes/yacht_roll_3d.gd` · `scenes/stage_yacht.gd`) / `dev` 또는 `next`
+- **우선순위 / 상태:** `보통(P1)` / `대기(TODO)`
+- **전달 내용:**
+  - **현행 문제:** `YachtCase3D`가 `UPDATE_ONCE` 정지 배경으로 컵을 세워 두고, `YachtRoll3D`가 별도 뷰포트의 고정 좌표에서 주사위만 쏘아 내어 컵이 작동하지 않는 장식처럼 보인다.
+  - **확정 연출 ([`PRESENTATION_SPEC.md` 2.3절](PRESENTATION_SPEC.md#23-카드-시점-매트-도구-card_table--8종)):**
+    1. 주사위 컵은 목재 케이스와 분리된 **가동 3D 소품**으로 동작한다(`v5/yacht_case/` 경량 메쉬·예산 유지).
+    2. 첫 굴림 및 리롤 시 컵이 굴릴 주사위(리롤 시 미고정 주사위만)를 품고 **흔들린 뒤(진동 + 딸그락 효과음)**, 펠트 트레이 쪽으로 **기울어지며 컵 입구(mouth) 안쪽에서 주사위가 실제로 쏟아져 나와** 펠트 위 지정 5칸(`FELT_Y`)에 바운스 후 정착한다.
+    3. 쏟아낸 뒤 컵은 우측 거치 자리로 바로 서서 대기하며, 정지 상태에서는 기존처럼 `UPDATE_DISABLED` 저전력 모드로 전환한다.
+- **반드시 지킬 제약:**
+  - `ToolYacht` 판정·RNG·고정(`keep`) 규칙 및 주사위 클릭 영역 좌표 불변
+  - `Visual_Asset_Guide_Draft.md` `6절` 3D 예산(케이스+컵 `≤ 3,500 tris`, `MSAA_2X`, 비활성 `32×32` 파킹) 유지
+- **참조 기획서:** [`PRESENTATION_SPEC.md` 2.3절](PRESENTATION_SPEC.md#23-카드-시점-매트-도구-card_table--8종) · [`Visual_Asset_Guide_Draft.md` 6절](visual/Visual_Asset_Guide_Draft.md#6-3d-모델링-폴리곤-수--저용량-운영-상한-규격-131-전수-계측)
+- **완료 기준 (검증):**
+  - `tests/ui_web_3d_budget_test.gd` · 야추 관련 화면 테스트 통과 및 실제 렌더에서 컵 기울임·입구 출현 일치 확인
 
 ---
 
@@ -70,19 +90,6 @@
     3. `tests/ui_profile_aura_test.gd`: 16번 줄에서 이미 제거된 노드를 숨기려다 실행 중단
   - 각 시험의 검증 의도가 현행 `1.3.1` 기획(직접 조작 · 카드 시점)과 일치하는지 확인해 현행 UI에 맞게 갱신하거나 폐기된 항목을 정리한다.
 - **참조 기획서:** [`GDD_TDD_Master.md` 4.2절 · 4.5절](GDD_TDD_Master.md#42-판정-도구-21종과-직접-조작-연출)
-
----
-
-### `[HANDOFF-005]` 처치 장면의 리벤지 `+N` 팝업 · `방어!` 배지 완전 대기 여부 결정
-
-- **대상 역할 / 브랜치:** 기획 담당(사용자 · 기획 AI) 결정 → 개발 AI / `dev`
-- **우선순위 / 상태:** `낮음(P2)` / `보류(HOLD — 결정 대기)`
-- **전달 내용:**
-  - 비침범 불변식(`1절` 2번)에 따라 특수 발판 연출은 `[HANDOFF-001]`에서 완전 대기로 수정했으나, 아래 2개 부가 팝업 배지는 현재 짧게만 대기(`0.12초` · `0.45초`)하고 배지(`약 1.5초`)가 떠 있는 채 다음 단계로 넘어간다.
-    - 리벤지 부스터 장전 팝업 `+N` (`_revenge_charged_popup`)
-    - 방어 성공 `방어!` 배지 (`_show_defended`)
-  - 끝까지 기다리면 처치·방어 장면이 약 `1초` 길어진다. **① 비침범 원칙대로 퇴장까지 완전 대기할지**, **② 처치 템포 유지를 위해 비차단 부가 배지 예외로 `EDGE_CASE_SPEC.md`에 명문화할지** 확정 후 반영한다.
-- **참조 기획서:** [`EDGE_CASE_SPEC.md` 2.1절](EDGE_CASE_SPEC.md#21-단일-fifo-연출-대기열과-비침범-불변식)
 
 ---
 
@@ -128,5 +135,6 @@
 | ID | 완료일 | 대상 브랜치 | 요약 | 반영 커밋 · 검증 결과 |
 |---|---|---|---|---|
 | **`[HANDOFF-001]`** 특수 발판 연출 중 템포 업 경고음 침범 수정 | 2026-11-28 | `dev` · `docs` | 빵집·자판기·가마솥·정령 칸·코너 버프·부스터 발판 연출 스텝이 자기 창·배지·날아가는 카드·파편 퇴장까지 `await`(`_await_tween`·`_await_freed`·`_await_seconds`, 세대 변경 시 즉시 종료)하도록 수정. 정령산 다음 판 디버그 판 준비 오류 동시 수정. `docs`의 `CHANGELOG.md`·`DEV_HISTORY.md`(`7.137`) 동기화 완료 | `dev`: `6d671f34` · `6b17c18f` / 재현 시험 `ui_round_sequence_test::_tempo_after_pad`(6종 발판 통과) · 단위 877개 · 배포 범위 화면 시험 전량 통과 *(참고: `2x`/`3x` 배속·`CNT_01` 되감기 별도 시나리오는 미실행, 배속·세대 초기화는 공용 타이머 경유)* |
-| **`[HANDOFF-004]`** AI 터보 턴 배율 기획서 `0.75배` 고정 | 2026-11-28 | `docs` | 사용자 결정에 따라 실제 코드(`TURBO_PACE_SCALE = 0.75`)에 맞춰 `GDD_TDD_Master.md` `4.6절` 및 `EDGE_CASE_SPEC.md` `2.5절`의 구 `0.35배` 표기를 `0.75배`로 통일 | `docs` 본 커밋 반영 · `GDD_TDD_Master.md` · `EDGE_CASE_SPEC.md` 정합성 확인 |
+| **`[HANDOFF-004]`** AI 터보 턴 배율 기획서 `0.75배` 고정 | 2026-11-28 | `docs` | 사용자 결정에 따라 실제 코드(`TURBO_PACE_SCALE = 0.75`)에 맞춰 `GDD_TDD_Master.md` `4.6절` 및 `EDGE_CASE_SPEC.md` `2.5절`의 구 `0.35배` 표기를 `0.75배`로 통일 | `docs`: `1247600` · `GDD_TDD_Master.md` · `EDGE_CASE_SPEC.md` 정합성 확인 |
+| **`[HANDOFF-005]`** 처치 장면 리벤지 `+N` · `방어!` 배지 예외 확정 | 2026-11-28 | `docs` | 사용자 결정(`2026-11-28`): 처치 템포 유지를 위해 `_revenge_charged_popup`(`0.12초`) · `_show_defended`(`0.45초`) 2종만 비차단 부가 배지 예외로 인정하고 `EDGE_CASE_SPEC.md` `2.1절` 및 `PRESENTATION_SPEC.md` `1.1·3.2절`에 명문화 (개발 코드 변경 불필요) | `docs` 본 커밋 반영 · `EDGE_CASE_SPEC.md` · `PRESENTATION_SPEC.md` 명문화 완료 |
 | **`[HANDOFF-007]`** TRPG·풀 파워 아이콘 및 확정 아트 통합 인계 | 2026-11-28 | `dev` · `docs` | TRPG 4기물(`TRPG_*_V02.png` 공용) · 풀 파워 아이콘(`AUG_UTIL_FULL_POWER_V02.png`, `256×256` ~14 KB, `SOFT_TONE`) · 다트 숫자 `fixed_frame.scn` 고정 · 결과 숫자 `Bangers`(`7` 가로획 보강) · 야추 빈 컵 분리 · 핀볼 측면 손잡이 유지 사양을 `Visual_Asset_Guide_Draft.md` `6.3절` 회귀 방지 고정 사항 및 `docs/ui-trial/augments/full-power-icon-v02-20261128.json`으로 `docs`에 영구 고정 | `dev`: `1c584e11` · `e497cf85` · `a30e128d` · `f4e5bec8` · `6d557ee5` / `test_pawn_art` 290개 · `test_augment_art` 316개 · `FULL_POWER_DEPLOYED_AUDIT []` 통과 |

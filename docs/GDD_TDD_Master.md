@@ -6,6 +6,7 @@
 > 이 문서는 현재 게임의 **규칙 · 콘텐츠 데이터 · 화면 구성 · 기술 아키텍처**의 단일 기준서(Single Source of Truth)다. 모든 수치는 `dev` 브랜치의 실제 데이터(`BoardCatalog`, `PawnCatalog`, `dice_table.csv`, `cards_table.csv`, `augments_table.csv`) 및 실서비스 화면과 일치한다.
 >
 > - **규칙 충돌 · 연출 순서 명세:** [`EDGE_CASE_SPEC.md`](EDGE_CASE_SPEC.md)
+> - **연출 · 모션 · 카메라 기획서 (도구 21종 소품 동작):** [`PRESENTATION_SPEC.md`](PRESENTATION_SPEC.md)
 > - **프로젝트 요약 · 협업 파이프라인 · 변천사:** [`FINAL_GAME_DESIGN_AND_HISTORY.md`](FINAL_GAME_DESIGN_AND_HISTORY.md)
 > - **시간순 개발 의사결정 아카이브 (`6.1 ~ 7.137`):** [`DEV_HISTORY.md`](DEV_HISTORY.md)
 > - **버전별 변경 내역:** [`../CHANGELOG.md`](../CHANGELOG.md) · **시각 자산 규격서:** [`visual/Visual_Asset_Guide_Draft.md`](visual/Visual_Asset_Guide_Draft.md)
