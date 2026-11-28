@@ -105,7 +105,7 @@ const BOARDS: Array[Dictionary] = [
 			# 정령 원기옥 (HANDOFF-015, PRESENTATION 5.1): 《드래곤볼》 원기옥(Spirit Bomb = 정령 + 원기옥) 패러디
 			"LAW_02": {"name": "정령 원기옥", "condition": "정령 칸에 {p1}회 멈춤",
 				"card_title": {"ko": "[특수 승리] 정령 원기옥", "en": "[Special Win] Spirit Bomb", "ja": "[特殊勝利] 精霊元気玉"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
-				"icon": "laws/LAW_02_SPIRIT_BOMB.png", "stage": &"spirit_bomb",
+				"icon": "laws/LAW_02_SPIRIT_BOMB_V02.png", "stage": &"spirit_bomb",
 				"win_reason": "정령들아, 나에게 힘을 조금만 나눠줘! — 특대 정령 원기옥 완성!", "result_phrase": "SPIRIT BOMB!", "geometry_key": "LAW_02:S",
 				"theme": {"font": "bungee", "headline": "SPIRIT BOMB!", "lines": "SPIRIT\nBOMB!", "ink": "0b2533", "accent": "2cc7c2", "tilt": -0.055},
 				"paper": "e3f6f7", "comic_title": {"upper": "aef5ff", "lower": "ffffff", "shadow": "126b7a"}},

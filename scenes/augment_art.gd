@@ -9,6 +9,7 @@ const CIRCLE_SHADER: Shader = preload("res://scenes/augment_circle.gdshader")
 const SOFT_TONE := Vector4(0.95, 0.94, 0.10, 0.12)
 const LIGHT_SOFT_TONE := Vector4(0.97, 0.97, 0.08, 0.06)
 const DISPLAY_TONES: Dictionary = {
+	"LAW_02_SPIRIT_BOMB_V02.png": SOFT_TONE,
 	"DICE_STOCK_V02.png": SOFT_TONE,
 	"DICE_DARTS_V02.png": SOFT_TONE,
 	"DICE_OMIKUJI_V02.png": SOFT_TONE,

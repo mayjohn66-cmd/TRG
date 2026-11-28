@@ -190,6 +190,7 @@ func test_spirit_bomb_stage_icon_and_cues() -> void:
 	check_eq(StringName(variant.get("stage", &"")), &"spirit_bomb", "전용 도입 무대")
 	check(ResourceLoader.exists(AugmentArt.ROOT + str(variant["icon"])), "전용 아이콘이 있다")
 	var icon: Texture2D = load(AugmentArt.ROOT + str(variant["icon"]))
+	check(icon.resource_path.ends_with("LAW_02_SPIRIT_BOMB_V02.png") and AugmentArt.load_first(AugmentArt.law_candidates("LAW_02")) == icon, "증강·도감이 새 원기옥 폭발 아이콘을 공유한다")
 	check(icon.get_width() <= 512 and icon.get_height() <= 512, "아이콘은 512px 이하")
 	var prelude := preload("res://scenes/law_victory_prelude.gd")
 	check(prelude.board_stage("LAW_02") == preload("res://scenes/spirit_bomb_stage.gd"), "식권 무대 대신 원기옥 무대")

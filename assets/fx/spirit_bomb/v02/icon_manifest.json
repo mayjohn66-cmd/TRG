@@ -1,0 +1,22 @@
+{
+  "generator": "native image_gen",
+  "date": "2026-11-29",
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1b4e743f-0bcc-4b36-baa0-b86041cc4467.png",
+  "prompt": "Create one square fantasy game augment icon. Reference 1 is STYLE ONLY: the polished hand-painted dice ability icon with bold outlines, simple warm highlights and dark midnight navy background. Reference 2 is SUBJECT SHAPE ONLY: thick cel-anime explosion with billowing overlapping cloud lobes and a bright white-yellow core, dark outer contours. NEW subject: one large cyan-white spirit energy ball descending into a powerful golden-orange eruption beneath it. Upper center a turbulent glowing turquoise energy orb, irregular wispy flame rim, bright white center; bottom center a compact orange-yellow explosion cloud with 3-4 large readable lobes and upward flame tips, visually connected to the orb. Make the orb the largest subject and the explosion clearly recognizable, not a tiny decoration. Subject fits comfortably in the inner 78% diameter of a circle with clear dark navy margin on all sides; corners plain dark navy because game applies circular cropping. Centered balanced compact silhouette, simplified details readable at 64px, quality and edge softness match reference 1. No mountain, no landscape, no city, no people, no text, no letters, no border or frame, no extra little symbols, no concentric target rings, no photographic effects. Dark indigo/navy background edge to edge. One complete finished icon, not a sheet.",
+  "references": [
+    "content_trickcal/illustrations/laws/LAW_07.png (style)",
+    "assets/fx/spirit_bomb/v02/eruption.png (explosion subject)"
+  ],
+  "destination": "content_trickcal/illustrations/laws/LAW_02_SPIRIT_BOMB_V02.png",
+  "runtime": {
+    "size_limit": 512,
+    "mipmaps": true,
+    "lossy_quality": 0.85,
+    "tone": "AugmentArt.SOFT_TONE",
+    "circle": "existing augment_circle shader and rim unchanged"
+  },
+  "previous": "LAW_02_SPIRIT_BOMB.png retained; board catalog now routes to V02",
+  "sha256": "cbdb3a142e897532eb3c6999eded2f6178570c50ddf3cdef911da45259f19ff6",
+  "runtime_bytes": 59200,
+  "validation": "spirit_mountain 146 assertions; augment_art 316 assertions; actual MainBoard augment cards compared with LAW_07 and LAW_04"
+}
