@@ -1460,8 +1460,7 @@ func _bind_state() -> void:
 		_enqueue_after_kills(func() -> void:
 			Sfx.play(&"dash")
 			_impact_ring(pad_pos, Color("63e6be"), 46.0)
-			_number_pop(pad_pos + Vector2(0, -30), "부스터 발판 +%d" % GameData.dash_steps(), Color("63e6be"))
-			_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(300.0 * _motion_pace()))))
+			await _await_tween(_number_pop(pad_pos + Vector2(0, -30), "부스터 발판 +%d" % GameData.dash_steps(), Color("63e6be")))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_note_super({"kind": "finish", "pawn": pawn_id})
 		_log_line(tr_ui("log.finish", [_pawn_name(pawn_id)]), Color("69db7c"))
@@ -2577,7 +2576,9 @@ func _build_debug_panel() -> VBoxContainer:
 		_card_option.set_item_metadata(_card_option.item_count - 1, card_id)
 	debug_row.add_child(_card_option)
 	debug_row.add_child(_make_button("현재 플레이어에게", _on_grant_card_pressed, 12))
-	debug_row.add_child(_make_button("도적 소환(%d번)" % BoardSpec.bakery_tiles[1], _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, BoardSpec.bakery_tiles[1]), 12))
+	# 이 화면은 판 시작(GameState가 고른 보드를 적용) 전에 만들어진다: 지난 판이 정령산이면 BoardSpec에 빵집 칸이 없으므로 고정 칸 번호를 쓴다
+	var thief_tile: int = 13
+	debug_row.add_child(_make_button("도적 소환(%d번)" % thief_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, thief_tile), 12))
 	debug_row.add_child(_make_button("와구와구 유령 소환(%d번)" % BoardSpec.halfway_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, BoardSpec.halfway_tile), 12))
 	_timer_check = CheckBox.new()
 	_timer_check.text = "제한 시간 사용"
@@ -3843,8 +3844,8 @@ func _bakery_feedback(data: Dictionary) -> void:
 	_enqueue_late(func() -> void:
 		if drawn != &"":
 			Sfx.play(&"good")
-		_fly_card_to_profile(at, owner_id, drawn == &"")  # 어떤 카드인지는 알려 주지 않는다 (뒷면만 날아간다)
-		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
+		await _await_tween(_fly_card_to_profile(at, owner_id, drawn == &""))
+		await _await_seconds(BURST_LIFETIME))  # 카드가 프로필에 닿아 터진 파편까지 사라진 뒤에 다음 연출  # 어떤 카드인지는 알려 주지 않는다 (뒷면만 날아간다). 카드가 프로필에 닿을 때까지 다음 연출은 기다린다
 
 
 ## 물약 색 (마녀의 가마솥 연출).
@@ -3867,7 +3868,7 @@ func _spirit_feedback(data: Dictionary) -> void:
 		return
 	var tile: int = int(data.get("spirit_tile", pawn.current_tile_idx))
 	_enqueue_late(func() -> void:
-		_floating_badge(_tile_center(tile) + _pawn_layer.position + Vector2(0, -46), "%s!" % L10n.t(MountainSpirits.name_of(spirit)), spirit_def["color"], 22))
+		await _await_tween(_floating_badge(_tile_center(tile) + _pawn_layer.position + Vector2(0, -46), "%s!" % L10n.t(MountainSpirits.name_of(spirit)), spirit_def["color"], 22)))
 
 
 func _cauldron_feedback(data: Dictionary) -> void:
@@ -3885,7 +3886,7 @@ func _cauldron_feedback(data: Dictionary) -> void:
 	for step: Variant in data.get("path", []):
 		if BoardSpec.cauldron_tiles.has(int(step)):
 			tile = int(step)
-	_enqueue_late(func() -> void: _play_cauldron_brew(tile, potion))
+	_enqueue_late(func() -> void: await _play_cauldron_brew(tile, potion))
 
 
 ## 가마솥 끓이기 연출 한 번 (약 2.6초): 자판기 창과 같은 크기의 창에 가마솥이 끓고 물약 병이 솟은 뒤, 물약 이름과 효과가 크게 보이고 배지가 말 위로 올라간다.
@@ -3954,10 +3955,15 @@ func _play_cauldron_brew(tile: int, potion: StringName) -> void:
 	tween.tween_property(effect_label, "modulate:a", 1.0, 0.2 * pace).set_delay((reveal_at + 0.25) * pace)
 	tween.tween_callback(func() -> void: Sfx.play(&"good" if good else &"bad", -4.0)).set_delay(reveal_at * pace)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.65 * pace)
+	var badge: Array[Tween] = []
 	tween.chain().tween_callback(func() -> void:
-		_floating_badge(badge_at, effect_text, color.lightened(0.15), 26)
+		badge.append(_floating_badge(badge_at, effect_text, color.lightened(0.15), 26))
 		panel.queue_free())
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(3000.0 * pace))
+	# 창이 닫히고 말 위 효과 배지가 다 떠오를 때까지 이 단계 안에서 기다린다 (그 전에 템포 업 경고음 등이 겹치지 않게)
+	await _await_freed(panel)
+	if not badge.is_empty():
+		await _await_tween(badge[0])
 
 
 ## 음료수 캔 색 (자판기 연출).
@@ -3977,7 +3983,7 @@ func _vending_feedback(data: Dictionary) -> void:
 	if pawn == null or not _fx_on():
 		return
 	var tile: int = pawn.current_tile_idx
-	_enqueue_late(func() -> void: _play_vending_pull(tile, drink))
+	_enqueue_late(func() -> void: await _play_vending_pull(tile, drink))
 
 
 ## 자판기 뽑기 연출 한 번 (약 2.5초): 일기토 룰렛 창과 같은 크기(560x360)의 창이 화면 가운데에 떠서, 자판기에서 캔이 툭 떨어지고
@@ -4041,10 +4047,15 @@ func _play_vending_pull(tile: int, drink: StringName) -> void:
 	tween.tween_property(buff_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.65 * pace)
 	tween.tween_callback(func() -> void: Sfx.play(&"good", -4.0)).set_delay(1.4 * pace)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.65 * pace)
+	var badge: Array[Tween] = []
 	tween.chain().tween_callback(func() -> void:
-		_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26)
+		badge.append(_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26))
 		panel.queue_free())
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(3000.0 * pace))
+	# 창이 닫히고 말 위 버프 배지가 다 떠오를 때까지 이 단계 안에서 기다린다 (그 전에 템포 업 경고음 등이 겹치지 않게)
+	await _await_freed(panel)
+	if not badge.is_empty():
+		await _await_tween(badge[0])
 
 
 ## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
@@ -4060,8 +4071,7 @@ func _corner_buff_feedback(data: Dictionary) -> void:
 	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
 	_enqueue_late(func() -> void:
 		Sfx.play(&"good", -6.0)
-		_floating_badge(at, "다음 굴림 +%d" % buff, Color("8ce99a"), 26)
-		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))
+		await _await_tween(_floating_badge(at, "다음 굴림 +%d" % buff, Color("8ce99a"), 26)))
 
 
 ## 테스트용: move_resolved 없이 빵집 알림만 확인한다.
@@ -9413,6 +9423,29 @@ func _reset_presentation() -> void:
 
 ## 처치 연출(컷신·장외 사출)은 같은 행동의 이동·발판 연출이 모두 끝난 뒤에 재생한다: 엔진은 한 번에 방송하므로 프레임 끝에 큐 맨 뒤로 보낸다.
 ## 처치(사출)가 아직 지연 큐에 있으면 그 뒤에, 없으면 바로 연출 큐에 세운다. 이동 4단계: 도착 칸 처치 연출이 끝난 뒤에 추가 이동(점프 부스트·발판·8번 공 돌진)을 보여 준다.
+## 연출 단계 안에서 그 단계가 띄운 움직임(트윈)이 끝날 때까지 기다린다 (예외 규칙 2.1-2: 모달·트윈만 띄우고 바로 돌아가면
+## 큐가 끝난 줄 알고 뒷 단계(템포 업 경고음 등)를 겹쳐 울린다). 판이 초기화되면(세대가 바뀌면) 바로 돌아간다.
+func _await_tween(tween: Tween) -> void:
+	var generation: int = _fx_generation
+	while tween != null and tween.is_valid() and tween.is_running() and generation == _fx_generation and is_inside_tree():
+		await get_tree().process_frame
+
+
+## 연출 단계 안에서 정해진 시간만큼 기다린다 (게임 배속을 따른다). 판이 초기화되면 바로 돌아간다.
+func _await_seconds(seconds: float) -> void:
+	var generation: int = _fx_generation
+	var timer: SceneTreeTimer = get_tree().create_timer(seconds)
+	while timer.time_left > 0.0 and generation == _fx_generation and is_inside_tree():
+		await get_tree().process_frame
+
+
+## 연출 노드가 화면에서 치워질 때까지 기다린다 (_await_tween과 같은 이유).
+func _await_freed(node: Node) -> void:
+	var generation: int = _fx_generation
+	while is_instance_valid(node) and node.is_inside_tree() and generation == _fx_generation and is_inside_tree():
+		await get_tree().process_frame
+
+
 func _enqueue_after_kills(step_callable: Callable, pawn_id: int = -1) -> void:
 	if not _late_steps.is_empty():
 		_enqueue_late(step_callable, pawn_id)
@@ -10051,6 +10084,10 @@ func _tile_glow(tile: int) -> void:
 
 
 ## 한 점에서 사방으로 튀는 파편 (원샷 파티클).
+## 파편이 흩어져 사라지는 시간 (초).
+const BURST_LIFETIME: float = 0.55
+
+
 func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	if not _fx_on() or not is_inside_tree():
 		return
@@ -10070,7 +10107,7 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	particles.position = at
 	particles.visible = true
 	particles.amount = clampi(amount, 1, MAX_BURST_PARTICLES)
-	particles.lifetime = 0.55
+	particles.lifetime = BURST_LIFETIME
 	particles.explosiveness = 1.0
 	particles.direction = Vector2.UP
 	particles.spread = 180.0
@@ -10191,16 +10228,16 @@ func _profile_react(player_id: int, good: bool, text: String = "") -> void:
 
 
 ## 문장 대신 큰 숫자(+3 등)와 충격 링·파편으로 효과를 알린다.
-func _number_pop(at: Vector2, text: String, color: Color) -> void:
+func _number_pop(at: Vector2, text: String, color: Color) -> Tween:
 	_impact_ring(at, color, 40.0)
 	_burst_shards(at, color, 10)
-	_floating_badge(at, text, color, 40)
+	return _floating_badge(at, text, color, 40)
 
 
 ## 카드 뒷면 한 장이 보드에서 그 플레이어 프로필의 손패 칩으로 날아간다. 손패가 가득이면 튕겨 나가며 부서진다.
-func _fly_card_to_profile(from: Vector2, player_id: int, rejected: bool) -> void:
+func _fly_card_to_profile(from: Vector2, player_id: int, rejected: bool) -> Tween:
 	if not _fx_on() or not _profiles.has(player_id):
-		return
+		return null
 	var card := Panel.new()
 	card.size = Vector2(26, 36)
 	card.pivot_offset = card.size / 2.0
@@ -10226,6 +10263,7 @@ func _fly_card_to_profile(from: Vector2, player_id: int, rejected: bool) -> void
 		tween.parallel().tween_property(card, "scale", Vector2(0.5, 0.5), 0.45)
 		tween.tween_callback(func() -> void: _burst_shards(target, Color("ffd43b"), 8))
 	tween.tween_callback(card.queue_free)
+	return tween
 
 
 ## 일회성 연출 노드(파편·충격 링·플로팅 글자·잔상)를 등록한다: 보통은 자기 트윈·타이머가 지우지만,
@@ -10279,7 +10317,7 @@ func _note_defense_success(pawn_ids: Array, show_caption: bool = true) -> void:
 
 
 ## 위로 솟아올랐다 사라지는 플로팅 텍스트 배지.
-func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 24) -> void:
+func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 24) -> Tween:
 	var label: Label = _fx_pool.take(&"badge")
 	if label == null:
 		label = _fx_pool.adopt(&"badge", _make_label(text, font_size, color))
@@ -10305,6 +10343,7 @@ func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 2
 	tween.tween_property(label, "position:y", label.position.y - 56.0, 1.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(1.2)
 	tween.chain().tween_callback(_fx_pool.give_back.bind(label))
+	return tween
 
 
 ## 손패 카드를 보드로 던졌다: 카드가 목표 지점으로 날아가 커졌다가 쾅 내리찍히며 파편이 퍼진다.

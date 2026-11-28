@@ -207,6 +207,16 @@
        "ko": "[해적 룰렛]에서 첫 칼을 꽂은 뒤 [칼 꽂기] 버튼이 사라져 스페이스 키로만 꽂을 수 있던 문제를 고쳤어요. 이제 해적통이 보드 위에 서 있고, 끌어서 돌린 뒤 구멍을 눌러 칼을 꽂아요 (제보 감사합니다!)",
        "en": "Fixed [Pirate Roulette] hiding the [Stab] button after the first sword, so only the Space key worked. The barrel now stands on the board: drag to turn it, then tap a hole to stab (thanks for the report!)",
        "ja": "［海賊ルーレット］で最初の剣を刺した後［剣を刺す］ボタンが消え、スペースキーでしか刺せなかった問題を修正しました。樽がボードの上に立ち、ドラッグで回してから穴を押して剣を刺します（ご報告ありがとうございます！）"
+      },
+      {
+       "ko": "마지막 차례가 자판기·마녀의 가마솥·정령 칸·코너·빵집·부스터 발판에 멈춘 순간 라운드가 넘어가면, 그 연출이 끝나기 전에 템포 업 경고음과 알림이 겹쳐 나오던 문제를 고쳤어요",
+       "en": "Fixed the Tempo Up alarm and banner overlapping the Vending Machine, Witch's Cauldron, Spirit tile, corner, Bakery or Booster Pad effect when the last turn of a round ended on one of them",
+       "ja": "ラウンド最後の手番が自販機・魔女の大釜・精霊マス・コーナー・パン屋・ブースター床に止まった直後、その演出が終わる前にテンポアップの警告音と通知が重なっていた問題を修正しました"
+      },
+      {
+       "ko": "[정령산]을 한 판 한 뒤 다른 보드판으로 새 게임을 시작하면 게임 화면 일부가 제대로 준비되지 않던 문제를 고쳤어요",
+       "en": "Fixed part of the game screen not being set up correctly when starting a new game on another board right after a [Spirit Mountain] match",
+       "ja": "［精霊山］を1回遊んだあと別のボードで新しいゲームを始めると、ゲーム画面の一部が正しく準備されなかった問題を修正しました"
       }
      ]
     }

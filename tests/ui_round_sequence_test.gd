@@ -31,6 +31,10 @@ func _run() -> void:
 		await _scenario(super_id)
 	await _tempo_after_capture(false)
 	await _tempo_after_capture(true)
+	# 예외 규칙 2.1-2·3 (1.3.1): 마지막 차례가 특수 발판에 멈춘 순간 라운드가 넘어가 템포 업이 와도,
+	# 그 발판 연출(자판기·가마솥 창, 정령·코너·빵집 카드·부스터 발판 배지)이 다 끝난 뒤에 템포 업 경고(소리·흔들림·배너)가 시작된다.
+	for pad: Array in [[&"monatium", 12, "자판기"], [&"belatien", 12, "마녀의 가마솥"], [&"spirit_mountain", 5, "정령 칸"], [&"classic", 8, "코너 버프"], [&"classic", 5, "빵집 카드"], [&"classic", 3, "부스터 발판"]]:
+		await _tempo_after_pad(pad[0], int(pad[1]), str(pad[2]))
 	GameEnums.draft_start = saved_start
 	if failures.is_empty():
 		print("UI_ROUND_SEQUENCE_OK: review logs -> review closed -> augment effects -> round banner -> first turn")
@@ -119,6 +123,86 @@ func _scenario(super_id: StringName) -> void:
 		for at: int in effect_steps:
 			expect(at <= int(times["banner"]), "%s: 효과 연출(%d프레임)이 라운드 배너(%d프레임)보다 먼저" % [label, at, int(times["banner"])])
 		expect(int(times["banner"]) <= int(times["first_turn"]), "%s: 첫 차례는 라운드 배너 뒤" % label)
+
+
+## 판 위에 아직 떠 있는 일회성 연출(효과 배지·날아가는 카드·특수 발판 창)이 있는가.
+func _pad_fx_alive() -> bool:
+	if board.get_node_or_null("VendingPullModal") != null or board.get_node_or_null("CauldronBrewModal") != null:
+		return true
+	for node: Node in board.get_tree().get_nodes_in_group(MainBoard.ONESHOT_FX_GROUP):
+		var item := node as CanvasItem
+		if item == null or node.is_queued_for_deletion() or not item.is_visible_in_tree() or item.modulate.a <= 0.02:
+			continue
+		if node.has_meta(FxPool.BUSY_META) and not bool(node.get_meta(FxPool.BUSY_META)):
+			continue  # 풀로 돌아간 배지
+		return true
+	return false
+
+
+func _tempo_after_pad(board_id: StringName, tile: int, label: String) -> void:
+	if board != null:
+		board.queue_free()
+		await process_frame
+	var saved_board: StringName = GameSession.board_id()
+	GameSession.set_board(board_id)
+	board = load("res://scenes/main_board.tscn").instantiate()
+	board.instant_roll_for_test = true
+	root.add_child(board)
+	await process_frame
+	await process_frame
+	board._bot.set_enabled(false)
+	board.manager._draft_offers.clear()
+	board.manager._draft_picks.clear()
+	board.manager.review_enabled = false
+	board.manager._begin_turn()
+	board._close_draft_overlay()
+	board._close_opening()
+	board._intro_pending = false
+	board._announcer.cancel()
+	board._announced_round = board.state.round_number
+	board._reset_presentation()
+	board._fx_until_msec = 0
+	var state: GameState = board.state
+	if board_id == &"spirit_mountain":
+		state.spirits[tile] = MountainSpirits.WATER  # 멈추면 카드 1장 (정령 이름 배지)
+	var mine: PlayerPawn = state.get_pawn(11)
+	mine.current_tile_idx = tile - 2
+	mine.has_left_start = true
+	mine.step_history.assign([tile - 2])
+	board._refresh_all()
+	board._announcer.cancel()
+	var clock: Array[int] = [0]
+	var tempo_at: Array[int] = [-1]
+	var overlapped: Array[bool] = [false]
+	board._announcer.entry_started.connect(func(_serial: int) -> void:
+		if str(board._announcer._current.get("tag", "")) == "템포 업" and tempo_at[0] == -1:
+			tempo_at[0] = clock[0]
+			overlapped[0] = _pad_fx_alive())
+
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = 1
+	ctx.raw_roll = 2
+	ctx.dice_value = 2
+	board.instant_roll_for_test = false
+	var report: MoveReport = MoveExecutor.execute(state, mine, ctx)
+	expect(tile in report.path, "%s: 말이 %d번 칸을 밟는다 (%s)" % [label, tile, report.path])  # 물약·발판은 그 뒤에 더 움직일 수 있다
+	var resolved: Dictionary = report.to_dict()
+	resolved["player_id"] = 1
+	board._on_event(&"move_resolved", resolved)  # 엔진(TurnManager)이 이동 뒤에 보내는 것과 같은 사건
+	board._on_event(&"tempo_up", {"level": 1, "round": 8, "lines": ["모든 이동 +1칸"]})
+	var pad_seen: int = -1
+	var deadline: int = Time.get_ticks_msec() + 20000
+	while Time.get_ticks_msec() < deadline and tempo_at[0] == -1:
+		await process_frame
+		clock[0] += 1
+		if pad_seen == -1 and _pad_fx_alive():
+			pad_seen = clock[0]
+	expect(pad_seen != -1, "%s: 발판 연출이 나온다" % label)
+	expect(tempo_at[0] != -1, "%s: 템포 업 경고가 나온다" % label)
+	expect(not overlapped[0], "%s: 템포 업 경고는 발판 연출(창·배지)이 다 끝난 뒤에 시작한다" % label)
+	board.instant_roll_for_test = true
+	GameSession.set_board(saved_board)
 
 
 ## 라운드 끝 처치(마지막 차례의 잡기)와 같은 순간에 템포 업이 오면: [처치 컷인 -> 장외 사출] 이 다 끝난 뒤에 템포 업 경고가 뜬다.
