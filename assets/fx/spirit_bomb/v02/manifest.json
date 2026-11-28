@@ -14,9 +14,10 @@
       "source": "Generated images are saved to C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3 as C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1b92a6c8-8e2b-41df-942a-572d3be04455.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
       "prompt": "Wide landscape 16:9 pop-art manga victory background illustration for SPIRIT BOMB fantasy board game, no text. A colossal radiant spirit-energy sphere hovers over rugged Spirit Mountain peaks, four elemental streams fire water earth wind spiral upward to it. Dynamic powerful comic explosion-cloud silhouette behind the mountain, huge sweeping energy curves. Composition: main mountain and orb occupy central LEFT 65% area; keep upper-left corner relatively simple for a title, bottom quarter simple for caption, RIGHT third low detail because character portrait overlays it. Entire image is dramatic screen-printed art with bold thick dark navy ink shapes, flat turquoise teal pale cyan cream limited palette, handmade rough ink edges and coarse halftone shading. No rainbow colors, no smooth photographic gradients, no shiny 3D render, no buildings, no characters, no text, no logos, no borders. Large clear illustrative mountain and huge spirit energy ball, highly legible silhouette. Full bleed illustration, landscape wide format.",
       "runtime_limit": 1280,
-      "sha256": "4bb17551579240a7bb86eb7dc6fa6cf16da683ad374e9cc83ecec72a11be7fb2"
+      "sha256": "4bb17551579240a7bb86eb7dc6fa6cf16da683ad374e9cc83ecec72a11be7fb2",
+      "usage": "archived source only; not referenced at runtime. Replaced by continuous eruption-to-print transition."
     }
   ],
   "invariants": "Existing six gathers / drop 1.88 / impact 2.26 / intro 2.86 and audio cues preserved. Spirit Mountain LAW_02 only; generic LAW_02 ticket poster unaffected.",
-  "validation": "Native MainBoard 240-frame capture: snapshot=true, rng=true; test_spirit_mountain 144 assertions, test_special_victory 113 assertions; runtime textures 557298 bytes total"
+  "validation": "Continuous carry: test_spirit_mountain 145 assertions, test_special_victory 113 assertions. One eruption TextureRect persists; settled bounds remain identical; shader printed=1 in finale. No additional image generated."
 }

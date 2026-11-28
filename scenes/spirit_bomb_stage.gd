@@ -35,6 +35,7 @@ const SPARKS := 24
 var _focus := Vector2.ZERO
 var _source_view := Vector2.ONE
 var _time := 0.0
+var _blast: TextureRect
 
 
 func setup(focus: Vector2, source_view: Vector2) -> void:
@@ -42,6 +43,20 @@ func setup(focus: Vector2, source_view: Vector2) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_focus = focus
 	_source_view = source_view
+	if _blast == null:
+		_blast = TextureRect.new()
+		_blast.name = "CarriedExplosionPrint"
+		_blast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_blast.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var crop := AtlasTexture.new()
+		crop.atlas = BLAST_ART
+		crop.region = PaintedFx.region(BLAST_ART)
+		_blast.texture = crop
+		var ink := ShaderMaterial.new()
+		ink.shader = preload("res://scenes/spirit_bomb_print.gdshader")
+		_blast.material = ink
+		_blast.hide()
+		add_child(_blast)
 
 
 ## i번째 빛방울 묶음이 출발하는 시각 (효과음 큐도 이 시각을 쓴다).
@@ -87,7 +102,26 @@ func seek(time: float, view: Vector2) -> void:
 		return
 	_time = time
 	size = view
+	if _blast != null:
+		_blast.visible = time >= IMPACT_AT
+		var pose := blast_pose(time, view, _target())
+		_blast.position = pose.position
+		_blast.size = pose.size
+		(_blast.material as ShaderMaterial).set_shader_parameter("printed", smoothstep(INTRO_SECONDS, INTRO_SECONDS + FADE_SECONDS, time))
+		(_blast.material as ShaderMaterial).set_shader_parameter("print_scale", _ratio())
 	queue_redraw()
+
+
+## The final eruption frame stays in exactly the same place while its ink changes.
+static func blast_pose(time: float, view: Vector2, target: Vector2) -> Rect2:
+	var ratio := minf(view.x / 1366.0, view.y / 768.0)
+	var impact := clampf(time - IMPACT_AT, 0.0, 0.40)
+	var rise := 1.0 - pow(1.0 - clampf(impact / 0.22, 0.0, 1.0), 3.0)
+	var swell := smoothstep(0.12, 0.40, impact)
+	var extent := Vector2(lerpf(190.0, 850.0, rise) + 110.0 * swell, lerpf(80.0, 630.0, rise) + 30.0 * swell) * ratio
+	var base := Vector2(target.x, maxf(target.y + 145.0 * ratio, view.y * 0.88))
+	var shake := Vector2(sin(impact * 69.0), 0.0) * 5.0 * (1.0 - smoothstep(0.22, 0.40, impact)) * ratio
+	return Rect2(base - Vector2(extent.x * 0.5, extent.y) + shake, extent)
 
 
 func _ratio() -> float:
@@ -207,12 +241,7 @@ func _draw_impact(target: Vector2, impact: float, ratio: float, alpha: float) ->
 	# A grounded cel-animation eruption: fast ignition, rising lobes, then a held cloud.
 	# Its lower edge stays planted; the cloud remains through the poster crossfade.
 	draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 0.76, 0.32, flash * 0.65 * alpha))
-	var rise := 1.0 - pow(1.0 - clampf(impact / 0.22, 0.0, 1.0), 3.0)
-	var swell := smoothstep(0.12, span + FADE_SECONDS, impact)
-	var extent := Vector2(lerpf(190.0, 850.0, rise) + 110.0 * swell, lerpf(80.0, 630.0, rise) + 30.0 * swell) * ratio
 	var base := Vector2(target.x, maxf(target.y + 145.0 * ratio, size.y * 0.88))
-	var shake := Vector2(sin(impact * 69.0), 0.0) * 5.0 * (1.0 - t) * ratio
-	PaintedFx.stamp(self, BLAST_ART, base - Vector2(0.0, extent.y * 0.5) + shake, extent, Color(1, 1, 1, alpha))
 	PaintedFx.stamp(self, PaintedFx.RIPPLE, base, Vector2(1080.0, 180.0) * (0.4 + t) * ratio, Color(1.0, 0.69, 0.20, (1.0 - t) * 0.7 * alpha))
 	# 4원소 불티: 정해진 각도로 방사 (시각만으로 정해진다)
 	for spark: int in SPARKS:
