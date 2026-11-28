@@ -135,6 +135,36 @@
 - **졸업 · 특수 승리 컷신 (`VictoryCutscene`):** 원인 칸 스포트라이트 `0.80초` → 화면 암전 + 사도 전신·법전/완주 테마 연출(`3.2초`, 전용 테마 컷신 `4.2초`, 임팩트 `0.62s`) → 순위 도장(`1ST·2ND·3RD`) → 경기 종료 시 만화 컷 결과창(`ResultComicPage` / `ResultComicReport`, `Bangers` 숫자 서체 · `7` 가로획 보강).
 - **사도 보이스 8장면:** `opening` · `attack` · `hit` · `skill` · `augment` · `victory` · `special_victory` · `select` — 연출 큐 스텝과 동기화하며 `연출 끔` 또는 헤드리스 테스트에서는 자동 생략한다.
 
+### 5.1 `LAW_02` 보드별 전용 승리 컷신 — 정령산 「정령 원기옥 (`SPIRIT BOMB!`)」 확정 규격
+
+정령산 보드의 `LAW_02` 변형은 기존 임시 명칭(`정령산 순례` · 식권 6장 연출 재사용)을 폐기하고, **《드래곤볼》 원기옥(영문 원어 `Spirit Bomb` = 정령 + 원기옥 이중 패러디)** 테마와 전용 2D 도입 무대(`&"spirit_bomb"`)로 확정한다 *(사용자 확정 `2026-11-28`, `HANDOFF-015`)*.
+
+#### A. 데이터 · 텍스트 · 테마 규격 (`BoardCatalog.BOARDS` `spirit_mountain`)
+
+| 항목 | 확정 규격 |
+|---|---|
+| **교칙명 (`name` / `card_title`)** | KO: **정령 원기옥** (`[특수 승리] 정령 원기옥`) · EN: **Spirit Bomb** (`[Special Win] Spirit Bomb`) · JA: **精霊元気玉** (`[特殊勝利] 精霊元気玉`) |
+| **달성 조건 (`condition`)** | `정령 칸에 {p1}회 멈춤` *(목표 `6회`, 기존 `bakery` 키·땅 정령 정차 집계 유지)* |
+| **보드 표기 (`SHOP_KINDS[&"spirit"]`)** | `law_tag`: **`[기운 목표]`** · `visit_stamp`: **`정령의 기운 모음! (%d/%d)`** *(KO/EN/JA 동시 반영)* |
+| **승리 문구 (`win_reason`)** | **`정령들아, 나에게 힘을 조금만 나눠줘! — 특대 정령 원기옥 완성!`** |
+| **만화 타이틀 (`result_phrase` / `theme`)** | `headline`: **`SPIRIT BOMB!`** · `lines`: **`SPIRIT\nBOMB!`** · `font`: `bungee` · `ink`: `#0b2533` · `accent`: `#2cc7c2` · `tilt`: `-0.055` · `paper`: `#e3f6f7` · `comic_title`: `upper #aef5ff / lower #ffffff / shadow #126b7a` · `geometry_key`: **`LAW_02:S`** *(윤곽 데이터 `SPIRIT\nBOMB!`로 재생성 필수)* |
+| **전용 아이콘 (`icon`)** | `assets/ui/illustrations/laws/LAW_02_SPIRIT_BOMB.png` (`≤ 512×512`, 텍스트 없음 — 정령산 밤하늘 위 청록·하늘빛 거대 원기옥 구체로 불·물·땅·바람 4색 정령 빛방울이 모여드는 구도) |
+
+#### B. 전용 도입 무대 연출 시퀀스 (`scenes/spirit_bomb_stage.gd`, `LawVictoryPrelude.STAGES[&"spirit_bomb"]`)
+
+- **아키텍처 불변식:** `bad_carrot_stage.gd` · `monatium_cash_stage.gd`와 동일한 **결정론적 Seekable 2D 무대**(`setup(focus, source_view)` + `seek(time, view)` + `_draw()`). 내부 `Timer` · `_process` · `randf()` 사용 금지(배속·스크럽·헤드리스 테스트 결정성 보장).
+- **핵심 상수:** `COUNT = 6` · `GATHER_START = 0.22` · `GATHER_INTERVAL = 0.23` · `ORB_FLIGHT = 0.26` · `DROP_START_AT = 1.88` · **`IMPACT_AT = 2.26`** · **`INTRO_SECONDS = 2.86`** · `FADE_SECONDS = 0.40` · `DIM_TARGET = 0.78` · `DIM_RAMP_END = 0.85`.
+
+| 구간 (초) | 시각 동작 (1366×768 기준 비례 스케일) | 사운드 큐 (`presentation_audio.gd` · `sfx.gd`) |
+|---|---|---|
+| **`0.00 ~ 0.22s`** | 배경 암전 시작(`DIM_TARGET 0.78` 향해 상승), `focus` 상단 `-165px` 지점에 작은 청록빛 핵(`r = 18px`)과 바닥 그림자 등장 | 법전 확정음 (`law_confirm`, 기존 규격) |
+| **`0.22 ~ 1.63s`** *(6회 기운 응집)* | 화면 6방향(좌상·우상·좌·우·좌하·우하)에서 4원소 색상(**불 `#ff7a3d` · 물 `#38bdf8` · 땅 `#c89b54` · 바람 `#52e5b7`** 순환) 정령 빛방울 6묶음이 `0.23초` 간격으로 곡선 궤적을 그리며 상단 핵으로 흡입. 매 합류마다 원기옥 반지름이 6단계(`22px → 136px`)로 탄성 팽창 + 바닥 그림자 확대 | `0.22 + i * 0.23s` (`i = 0..5`): 합성음 **`spirit_orb_gather`** (회차에 맞춰 맑은 상승 차징 톤) |
+| **`1.63 ~ 1.88s`** *(임계 팽창)* | 최대 반지름(`136px`) 구체 외곽에 하늘·청록 이중 오라(`#aef5ff`, `#2cc7c2`)와 결정론적 6갈래 전기 아크 맥동, 미세 진동 | *(차징 잔향 유지)* |
+| **`1.88 ~ 2.26s`** *(투하)* | 거대 원기옥 구체가 `ease_in` 가속 곡선으로 상단에서 중앙 `focus` 지점으로 수직 투하, 하강 잔상 꼬리 표시 | `1.88s`: **`dash`** (`-4.0 dB`, 낙하 풍절음) |
+| **`2.26 ~ 2.86s`** *(착탄 폭발 & 핸드오프)* | `IMPACT_AT(2.26s)` 순간 중앙 백색·시안 섬광 링 + 방사형 충격파 + 4원소 불티 파편 확산 → `2.86s`에 만화 타이틀 **`SPIRIT BOMB!`** 으로 자연스럽게 핸드오프 | `2.26s`: **`hero_impact`** (`-3.0 dB`) + 합성음 **`spirit_bomb_burst`** (저음 충격파 + 시안 잔향) |
+
+- **금지 안티패턴:** 식권 6장(`golden_ticket_stage.gd`) 폴백 잔존 금지 · `SPIRIT PILGRIMAGE` 옛 타이틀 윤곽 데이터 잔존 금지 · `win_reason` 및 `visit_stamp`의 구 `순례` 문구 잔존 금지.
+
 ---
 
 ## 6. 신규 연출(`1.4+`) 기획 · 구현 시 필수 체크리스트

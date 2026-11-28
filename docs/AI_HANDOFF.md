@@ -39,9 +39,45 @@
 
 | ID | 우선순위 | 상태 | 대상 역할 | 대상 브랜치 | 요약 |
 |---|---|---|---|---|---|
+| **`HANDOFF-015`** | `P1` | `대기(TODO)` | 개발 · 아트 AI | **`dev`** | 정령산 `LAW_02` 특수 승리 **「정령 원기옥 (`SPIRIT BOMB!`)」** 패러디 개편(구 `정령산 순례` 교체) 및 전용 2D 원기옥 컷신·아이콘·SFX 구현 |
 | **`HANDOFF-012`** | `P1` | `검토요청(REVIEW)` | 개발 · 아트 AI | **`dev`** | 규칙 도감 UI/UX 종합 개선 10건 (`UI-01 ~ UI-10`: 카드 5필터, 상세 팝업 전체 암전·닫기 구분, 백업 팝업 대비·닫기, 특수 칸 미니보드 잘림 해소 등) |
 | **`HANDOFF-014`** | `P2` | `대기(TODO)` | QA · 개발 AI | **`dev`** | 전역 UI 겹침 감사(`tests/ui_overlap_audit.gd`)의 구 첫 증강 fixture를 현행 4R 드래프트 기준으로 갱신 |
 | **`HANDOFF-003`** | `P2` | `보류(기획 대기)` | 개발 · 3D 아트 AI | `next` | `1.4` 마스터 기획 초안([`V1_4_UPDATE_PLAN.md`](V1_4_UPDATE_PLAN.md) — 유령 늪·도구 14종·기물 16종·특수 승리 10종·카드 23종·증강 8종) 사용자 패러디·최종 선별 확정 전 선구현 금지 |
+
+---
+
+### `[HANDOFF-015]` 정령산 `LAW_02` 특수 승리 「정령 원기옥 (`SPIRIT BOMB!`)」 패러디 개편 및 전용 컷신·아이콘 구현
+
+- **대상 역할 / 브랜치:** 개발 · 2D 아트 AI (`core_engine/board/board_catalog.gd` · `scenes/spirit_bomb_stage.gd` · `scenes/law_victory_prelude.gd` · `scenes/presentation_audio.gd` · `scenes/sfx.gd` · `scenes/victory_title_geometry_data.gd` · `assets/ui/illustrations/laws/LAW_02_SPIRIT_BOMB.png` · `content_trickcal/data/translations.csv`) / **`dev` (1.3.x 실시간 개선)**
+- **우선순위 / 상태:** `보통(P1)` / `대기(TODO)`
+- **전달 내용 (사용자 확정 `2026-11-28`):**
+  - 기존 정령산 `LAW_02` 임시 명칭(**`정령산 순례`** / `SPIRIT PILGRIMAGE` · 에르핀 식권 6장 연출 재사용)을 폐기하고, **《드래곤볼》 원기옥 (`Spirit Bomb` = 정령 + 원기옥 이중 패러디)**으로 전면 개편한다.
+  - **1. `BoardCatalog` 텍스트 · 테마 · 번역 갱신:**
+    - `SHOP_KINDS[&"spirit"]`: `law_tag = "[기운 목표]"`, `visit_stamp = "정령의 기운 모음! (%d/%d)"`
+    - `spirit_mountain` → `law_variants["LAW_02"]`:
+      - `name`: `"정령 원기옥"` · `condition`: `"정령 칸에 {p1}회 멈춤"` *(목표 `6회`, `bakery` 키·땅 정령 정차 집계 유지)*
+      - `card_title`: `ko: "[특수 승리] 정령 원기옥"`, `en: "[Special Win] Spirit Bomb"`, `ja: "[特殊勝利] 精霊元気玉"`
+      - `win_reason`: `"정령들아, 나에게 힘을 조금만 나눠줘! — 특대 정령 원기옥 완성!"`
+      - `result_phrase`: `"SPIRIT BOMB!"` · `geometry_key`: `"LAW_02:S"`
+      - `icon`: `"laws/LAW_02_SPIRIT_BOMB.png"` · `stage`: `&"spirit_bomb"`
+      - `theme`: `{"font": "bungee", "headline": "SPIRIT BOMB!", "lines": "SPIRIT\nBOMB!", "ink": "0b2533", "accent": "2cc7c2", "tilt": -0.055}`
+      - `paper`: `"e3f6f7"` · `comic_title`: `{"upper": "aef5ff", "lower": "ffffff", "shadow": "126b7a"}`
+    - `victory_title_geometry_data.gd`의 `"LAW_02:S"` 글자 윤곽 데이터를 `SPIRIT\nBOMB!`로 재생성하고 `translations.csv`에 한·영·일 신규 문구를 동시 추가한다.
+  - **2. 전용 도입 무대 구현 (`scenes/spirit_bomb_stage.gd`, `LawVictoryPrelude.STAGES[&"spirit_bomb"]`):**
+    - `bad_carrot_stage.gd` · `monatium_cash_stage.gd`와 동일한 **결정론적 Seekable 2D 무대**(`setup(focus, source_view)` + `seek(time, view)` + `_draw()` · 내부 `Timer`/`randf()` 금지).
+    - **타이밍 상수:** `COUNT = 6` · `GATHER_START = 0.22` · `GATHER_INTERVAL = 0.23` · `ORB_FLIGHT = 0.26` · `DROP_START_AT = 1.88` · **`IMPACT_AT = 2.26`** · **`INTRO_SECONDS = 2.86`** · `FADE_SECONDS = 0.40` · `DIM_TARGET = 0.78` · `DIM_RAMP_END = 0.85`.
+    - **3단계 시각 시퀀스:** ① `0.22~1.63s`: 6방향에서 4원소 색(`불 #ff7a3d · 물 #38bdf8 · 땅 #c89b54 · 바람 #52e5b7`) 정령 빛방울 6묶음이 상단(`focus - 165px`)으로 곡선 흡입, 매 합류마다 구체 반지름 6단계(`22→136px`) 탄성 팽창 + 바닥 그림자 확대 → ② `1.63~2.26s`: 하늘·청록 이중 오라 + 6갈래 결정론 전기 아크 맥동 후 `1.88s`부터 `ease_in` 수직 투하 → ③ `2.26~2.86s`: 중앙 백색·시안 섬광 링 + 방사형 충격파 + 4원소 불티 확산 → `SPIRIT BOMB!` 만화 타이틀 핸드오프.
+  - **3. 효과음 큐 (`presentation_audio.gd` · `sfx.gd`):**
+    - `0.22 + i * 0.23s` (`i = 0..5`): 합성음 `spirit_orb_gather` · `1.88s`: `dash (-4.0 dB)` · `2.26s`: `hero_impact (-3.0 dB)` + 합성음 `spirit_bomb_burst`.
+  - **4. 전용 아이콘 (`assets/ui/illustrations/laws/LAW_02_SPIRIT_BOMB.png`):**
+    - `≤ 512×512` PNG(문자 없음), 정령산 밤하늘 위 거대 청록·하늘빛 원기옥 구체에 불·물·땅·바람 4색 정령 빛방울이 빨려 드는 구도.
+- **반드시 지킬 제약:**
+  - `golden_ticket_stage.gd` 폴백 및 구 `정령산 순례` / `SPIRIT PILGRIMAGE` 문자열 잔존 금지
+  - 3D 모델 추가 없음(순수 2D Seekable + `≤ 512px` 아이콘 1장), 전체 비침범 `await` 및 `1x`/`3x` 배속 일관성 유지
+- **참조 기획서:** [`PRESENTATION_SPEC.md` 5.1절](PRESENTATION_SPEC.md#51-law_02-보드별-전용-승리-컷신--정령산-정령-원기옥-spirit-bomb-확정-규격) · [`GDD_TDD_Master.md` 4.0절·4.3절](GDD_TDD_Master.md#40-테마-보드판-4종과-전용-기믹)
+- **완료 기준 (검증):**
+  - 정령산 `LAW_02` 승리 컷신 `seek()` 프레임/도감 미리보기 확인(구 `식권`·`SPIRIT PILGRIMAGE` 미노출)
+  - 단위 테스트 · `test_augment_art` · `ui_rulebook_scroll_test` · `ui_text_fit` (한·영·일) 통과
 
 ---
 
