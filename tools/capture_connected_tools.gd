@@ -283,12 +283,18 @@ func run() -> void:
 		push_error("CAPTURE: hwatu selection missing")
 	end_clip()
 	await fixture(&"DICE_PIRATE")
-	(board.state.tools[board.manager.current_player_id()] as ToolPirateRoulette).arm(2)
 	start_clip("10-pirate-roulette")
+	await seconds(.5)
+	board._on_roll_pressed()  # 해적 통 꺼내기
+	await seconds(1.3)
 	for i: int in 3:
-		await seconds(.6)
-		await click(board._roll_button)
-		await wait_result()
+		if board.manager.is_game_over: break
+		board._on_roll_pressed()  # 칼 꽂기
+		await seconds(1.3)
+		if not board._stop_button.is_visible_in_tree(): break
+	if board._stop_button.is_visible_in_tree() and not board._stop_button.disabled:
+		await click(board._stop_button)
+	await wait_result()
 	end_clip()
 	await fixture(&"DICE_SCRATCH")
 	start_clip("11-scratch-ticket")
@@ -324,9 +330,9 @@ func remaining_tools() -> void:
 	await fixture(&"LIFE_ROULETTE")
 	start_clip("15-life-roulette")
 	await seconds(.8)
-	var pad:=board._roll_pad
-	var wheel_center: Vector2=pad.get_global_transform()*(pad._wheel.position+pad._wheel.size*.5)
-	await click_at(wheel_center)
+	board._on_roll_pressed()  # 룰렛 꺼내기
+	await seconds(1.3)
+	board._on_roll_pressed()  # 돌리기
 	await wait_result()
 	end_clip()
 	await fixture(&"SLOT_777")
@@ -343,18 +349,22 @@ func remaining_tools() -> void:
 	end_clip()
 	await fixture(&"REVOLVER")
 	start_clip("17-revolver")
-	await seconds(3.3)
-	await click(board._roll_button)
-	await wait_result()
+	await seconds(.5)
+	board._on_roll_pressed()  # 리볼버 꺼내기
+	await seconds(2.0)
+	for i: int in 2:
+		board._on_roll_pressed()  # 방아쇠
+		await seconds(1.6)
 	if board._stop_button.is_visible_in_tree() and not board._stop_button.disabled:
-		await seconds(.6)
 		await click(board._stop_button)
-		await seconds(1)
+	await wait_result()
 	end_clip()
 	await fixture(&"DICE_DARTS")
 	start_clip("18-darts")
-	await seconds(.8)
-	await click(board._roll_button)
+	await seconds(.5)
+	board._on_roll_pressed()  # 과녁 꺼내기
+	await seconds(1.3)
+	board._on_roll_pressed()  # 던지기
 	await wait_result()
 	end_clip()
 	await fixture(&"DICE_TAROT")
