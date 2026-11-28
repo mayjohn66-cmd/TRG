@@ -273,7 +273,7 @@
 ### 2.5 성능 · 메모리 · 웹 분할 패키지
 
 - **화면 갱신 배칭 (`processing_started/finished`):** 행동 하나를 처리하는 동안 발생하는 다중 UI 갱신 요청을 중첩 깊이 기준으로 모아 바깥 처리가 끝날 때 단 1회만 다시 그린다.
-- **터보 AI 턴:** AI 차례 연출은 `0.35배` 시간(AI 간 처치 컷인 2배속)으로 가속하되, 사람 말이 잡히거나 특수 승리 진행도가 변하는 턴에는 즉시 일반 속도로 복귀한다.
+- **터보 AI 턴 (`TURBO_PACE_SCALE = 0.75`):** AI 차례 연출은 **`0.75배` 시간**(AI 간 처치 컷인 2배속, `2026-11-28` 현행 고정)으로 가속하되, 사람 말이 잡히거나 특수 승리 진행도가 변하는 턴에는 즉시 일반 속도로 복귀한다.
 - **메모리 · 3D 저용량 예산 · 웹 분할 팩 관리 (`Web3DBudget` · `GamePack`):**
   - **3D 모델 경량본 참조 강제 (`tests/lowpoly_models_test.gd`):** 런타임 씬은 `assets/models/optimized/v4/`·`v5/`(또는 신규 `vN/`)의 압축 `.scn`/`.res`만 참조해야 하며 원본 `.glb`/`.blend`를 직접 참조하면 테스트가 실패한다. 신규 모델은 [`visual/Visual_Asset_Guide_Draft.md` 6절](visual/Visual_Asset_Guide_Draft.md#6-3d-모델링-폴리곤-수--저용량-운영-상한-규격-131-전수-계측)의 등급별 삼각형·용량·`512px` 텍스처 상한을 넘길 수 없다.
   - **비활성 3D `SubViewport` 파킹 (`Web3DBudget` · `tests/ui_web_3d_budget_test.gd`):** 사전 로딩·재사용 대기 중인 모든 3D 뷰포트는 반드시 `32×32 px` + `UPDATE_DISABLED`로 축소 보관하고 실제 사용 시에만 원래 해상도(표시 크기 `≤ 1.5배`, `MSAA_2X` 상한)로 복원한다(2D 인쇄용 뷰포트는 미축소).

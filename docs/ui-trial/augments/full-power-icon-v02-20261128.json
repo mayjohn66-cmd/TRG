@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-28",
+  "asset": "content_trickcal/illustrations/augments/AUG_UTIL_FULL_POWER_V02.png",
+  "generator": "native image_gen.imagegen",
+  "tool_event": "exec-b8935d94-e983-4bd7-b825-6d0bb12a331a",
+  "image_model": "not exposed",
+  "prompt": "Create ONE square raster game augment icon for the passive 'Full Power', matching the provided two reference icons' painted cartoon item style, warm thick dark-brown outlines, softly shaded gold edges, restrained warm glints, saturated but not photorealistic. The references are STYLE references ONLY, do not draw a pawn, railroad, train or road. Subject: one chunky small golden power meter, horizontal with a slight 3/4 perspective, its continuous gauge visibly fully charged through green then amber into a bright coral-red terminal segment. A clear small gold pointer is at the far-right red maximum segment. A single large gold lightning bolt rises just above that maximum segment, clearly attached to the visual idea of full power, avoiding overlaps that obscure the red zone. Very simple bold readable silhouette for a 48px icon, large centered object within circular safe area, broad empty margins at all corners, all primary features inside central 75% of square. Deep navy blue almost solid background matching references, very subtle warm halo around the subject only. A tiny one or two four-point glints, no excessive effects. No outer circle or medallion border, since the game draws its own rim. NO letters, no numbers, no +2, no text, no labels, no speech bubbles, no UI frame, no watermark. Match the detail level and softness of the reference art, not vector geometry.",
+  "source_path": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-b8935d94-e983-4bd7-b825-6d0bb12a331a.png",
+  "references": [
+    "content_trickcal/illustrations/augments/AUG_UTIL_DRIFT_V02.png",
+    "content_trickcal/illustrations/augments/AUG_UTIL_MOVE_PLUS.png"
+  ],
+  "source_dimensions": [
+    1254,
+    1254
+  ],
+  "pixels_modified": false,
+  "runtime_import": {
+    "size_limit": 256,
+    "mipmaps": true,
+    "compression": "lossy",
+    "quality": 0.85
+  },
+  "display_tone": "AugmentArt.SOFT_TONE",
+  "qa": "Compared actual augment cards and 48px medals in Godot OpenGL. Red end and lightning remain readable, no text, circular safe padding preserved.",
+  "rules_unchanged": true,
+  "sha256": "7bb39e76ecd5e456b7174ac8ec05a8195a5c95815d80517835025e868e8c910c"
+}

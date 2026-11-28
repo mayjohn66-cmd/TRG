@@ -237,6 +237,16 @@
 
 - **주의 (`revolver_*_preview.gd`):** 개발용 프리뷰 씬 3종에만 `MSAA_4X`가 남아 있으나 **실제 게임 씬에서는 어떤 경우에도 `MSAA_4X`를 사용하지 않는다.**
 
+### 6.3 사용자 확정 3D · 아트 회귀 방지 고정 사항 (`1.3.1` 인계 확정)
+
+> 아래 5건은 사용자 검수로 확정된 최종 사양이다. 신규 작업·리팩터링 시 이전 임시 도형·구형 모델·구형 동작으로 되돌리지 않는다.
+
+1. **TRPG 4기물 보드 아트 (`PawnArt`):** 전사·마법사·궁수·도적의 보드 기물은 증강 아이콘과 동일한 `content_trickcal/illustrations/augments/pawns/TRPG_*_V02.png`를 공용 사용한다(이전 사람형 TRPG 아트로 회귀 금지).
+2. **`[패시브] 풀 파워` 아이콘 (`AugmentArt`):** 임시 코드 도형 대신 금색 파워 게이지·번개 일러스트 `AUG_UTIL_FULL_POWER_V02.png`(`256×256`, 런타임 약 `14 KB`, `AugmentArt.SOFT_TONE`)를 선택지·도감 공용으로 사용한다(원본·프롬프트·SHA-256: [`../ui-trial/augments/full-power-icon-v02-20261128.json`](../ui-trial/augments/full-power-icon-v02-20261128.json)).
+3. **다트 보드 숫자 고정:** 숫자는 `assets/models/optimized/v5/darts/fixed_frame.scn`에 고정하고 과녁 판(`rotating_target.scn`)만 회전한다(숫자까지 회전하는 구형 구조로 회귀 금지).
+4. **결과 숫자 서체:** 기존 `Bangers` 서체를 유지하고 숫자 `7`만 가로획을 보강한다.
+5. **야추 빈 컵 · 핀볼 발사대:** 야추 빈 컵은 케이스(`v5/yacht_case/case.scn`)와 분리 유지하며, 핀볼 스프링은 유지한 채 측면 손잡이만 아래로 당기는 조작 연출을 유지한다.
+
 ---
 
 ## 7. 화면별 UI 버튼 크기 · 배치 좌표 고정 규격 (`1366×768`)
