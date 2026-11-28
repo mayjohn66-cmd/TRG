@@ -1,0 +1,127 @@
+{
+  "mode": "built-in image_gen",
+  "transparent_background": true,
+  "files": [
+    {
+      "role": "board",
+      "file": "board.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-5ad4fbd8-621f-412a-8e83-4d4ca90ca3e3.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one compact square board-game track viewed slightly from above, eight large ivory rounded square tiles surrounding a teal open center; ONE gold corner tile. Bold, uncomplicated miniature board.",
+      "sha256": "029ed8422a1a63e3f6a7d589dd26f976d6a4fad79f3d96ad692520c712bcef10",
+      "pixels_modified": false
+    },
+    {
+      "role": "pawn_basics",
+      "file": "pawn_basics.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1536211d-aa7d-4410-a9f5-c402cf81dd39.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one rounded ivory board-game pawn with a spherical head, short tapered body and broad round gold-trimmed pedestal, a teal shaded side. Simple painted toy pawn, no face, no realistic reflections.",
+      "sha256": "670462c56a415826f72855842634d57ea2859e5b7405e72552e8b2b491212501",
+      "pixels_modified": false
+    },
+    {
+      "role": "pawn_ability",
+      "file": "pawn_ability.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-de2a09bc-b81b-4d00-a13b-eff072230ee3.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one chunky ivory chess knight with gold base and ONE broad gold lightning bolt at its right side, dark forest outline. The horse silhouette and bolt must be immediately readable.",
+      "sha256": "41e20dfe6003f0a48d16043d0c39254a13920a4bf8286d5645cb6ab55ae8fc08",
+      "pixels_modified": false
+    },
+    {
+      "role": "capture",
+      "file": "capture.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2f0b9f92-f5a7-4182-8bbb-63f415019379.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: two simple rounded board-game pawns, a teal pawn in front and a smaller coral pawn tilting sideways behind it, with one tiny gold impact accent between them. Communicates capturing another pawn; no weapons.",
+      "sha256": "aa5961fe3e6eddf8ec7bbcdfa9a660334aada022e2b4484f40845d7e53459181",
+      "pixels_modified": false
+    },
+    {
+      "role": "corner",
+      "file": "corner.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f26bd9ec-65c9-458d-98c9-2387074f45f5.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one ivory and green square board tile at slight top-down angle with ONE broad raised teal right-angle turn arrow on its top face; gold trim on the rounded tile. A clearly bent turn arrow, not straight.",
+      "sha256": "fb96b337961d91fad06dd3a1033587b1ae9867d54db5b35b7c0690ff377cfee7",
+      "pixels_modified": false
+    },
+    {
+      "role": "halfway",
+      "file": "halfway.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7ffd0b23-9805-4725-b879-2e31dd5a2ed0.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one short gold flagpole carrying a broad teal swallowtail flag, firmly mounted on an ivory and gold board tile, slight top-down view. A checkpoint flag, no checkered pattern.",
+      "sha256": "7a5d81e443436800588695d908ce330ce46acd9496dc409753ad15f9b0ff6202",
+      "pixels_modified": false
+    },
+    {
+      "role": "boost",
+      "file": "boost.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a827cf8c-f075-48ac-804f-8503f2926c1b.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one ivory gold-trimmed board tile with exactly TWO chunky raised teal forward chevrons and a small coral acceleration swoosh at one side, slight top-down view. Simple speed boost tile.",
+      "sha256": "4fcc30670422fd9cebe9be095f02e7c5b79e29dc4c32c4a4f84326fd5c04c75e",
+      "pixels_modified": false
+    },
+    {
+      "role": "hidden_trap",
+      "file": "hidden_trap.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2ae4cc93-68c4-4f0f-8d4d-fd05c0aae86b.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: one lavender game card with ivory gold trim, carrying a simple large closed-eye emblem, with a small chunky gold padlock overlapping the bottom-right corner. Hidden trap, not scary, no teeth or face.",
+      "sha256": "c030d5ee73d9a4d51e53f895e035db76b7e49998e402b57ad3d3df205b84e6ac",
+      "pixels_modified": false
+    },
+    {
+      "role": "bread",
+      "file": "bread.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-90caae98-e5bb-4e23-ac31-008b45352957.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: ONE plump golden-brown bakery bread loaf with exactly three broad diagonal cuts, warm ivory cut highlights and one small teal napkin under it. Compact unmistakable bakery emblem.",
+      "sha256": "6fcd57ad14334ca61ad03222f71aa1364a7458f3e7cec00ddbe49e5bb0f19f27",
+      "pixels_modified": false
+    },
+    {
+      "role": "wardrobe",
+      "file": "wardrobe.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1b2b5d22-a928-4ac8-9f2b-be6dfb31c3d5.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: ONE small closed wardrobe with two rounded ivory doors, a teal frame, two simple gold handles and small gold feet. Slight front three-quarter view. Unmistakable furniture cupboard, no clothing or scenery.",
+      "sha256": "54f43775e63a2a90f03e490d7d5e85d556a7fb27d1e263cafe01744486472d5c",
+      "pixels_modified": false
+    },
+    {
+      "role": "store",
+      "file": "store.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-fef298f3-0ed1-4def-aafb-54331f6008ea.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: ONE small convenience-store storefront, ivory walls, a broad teal awning with one coral stripe, simple dark teal glass window and door. No readable lettering or signs. Compact tiny shop with gold frame accents.",
+      "sha256": "8f5da44972fb573ef2d4f018204a1704ea3c95bddf129287e34c253b2374b139",
+      "pixels_modified": false
+    },
+    {
+      "role": "vending",
+      "file": "vending.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7213aca9-30da-42ca-9ee4-953aba9583b2.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: ONE rounded teal drink vending machine with a large dark window displaying exactly three chunky coral, gold and ivory cans, two large gold selection buttons and one dark lower dispensing opening. Simple, immediately readable, no writing.",
+      "sha256": "b20096870a79db724fad0feadffa143b70942a7ab0f0feb763a6a5f874fbfbe3",
+      "pixels_modified": false
+    },
+    {
+      "role": "witch_shop",
+      "file": "witch_shop.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-fa877737-2c43-4db6-88a4-c714c48b311b.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: ONE small coral fast-food paper carton with a handful of chunky orange carrot fries sticking out, two small green carrot leaf tips, a simple gold star on the carton. These are carrot fries, no witch or shop building.",
+      "sha256": "5f04361288754bd5f7f9bd8c1b3ab72fe1101385ca4d5b0798c90670c0d02e75",
+      "pixels_modified": false
+    },
+    {
+      "role": "cauldron",
+      "file": "cauldron.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-325ca490-828c-4775-b131-0abbee9d00b8.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: ONE rounded dark teal witch's cauldron with a gold rim and two small handles and short feet, containing bright mint-green liquid with exactly three large bubbles floating just above it. Cute matte cartoon prop, no skull or flame.",
+      "sha256": "854bd26bf510b2e58ccf788f09fe65ac9a233725fc2e4b350dd81f958e764d6d",
+      "pixels_modified": false
+    },
+    {
+      "role": "spirit",
+      "file": "spirit.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-59f099d4-5ad9-4f8b-8274-24efd11b5792.png",
+      "prompt": "Create ONE standalone game rulebook UI icon matching the attached reference icons exactly as a coherent icon family: thick smooth dark forest-brown outline, soft rounded chunky silhouette, warm ivory and gold trim, teal / green / coral / lavender fills, restrained matte three-tone cartoon shading and one broad highlight. Simple readable at 42 pixels, attractive at 132px. Center the single emblem, occupy about 78 percent of a square image with transparent margins. Genuine transparent background. No backing circle, no frame, no scenery, no text, letters, numbers, watermark or tiny detail. Do not imitate a photorealistic 3D render or use flat monochrome pictograms. Reference images are STYLE references only. Subject: THREE small rounded elemental wisps grouped together: one coral flame, one sky-blue droplet, one green leaf; each edged dark forest-brown and softly shaded, one small gold sparkle. Cozy elemental spirit emblem, not a glowing effect.",
+      "sha256": "d30173e69b9fcce38ecd9e594390612d4552c1cde5dc64450342ab7718919441",
+      "pixels_modified": false
+    }
+  ],
+  "restored_to_current_dev": "2026-11-28"
+}

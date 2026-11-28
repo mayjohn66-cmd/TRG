@@ -77,6 +77,25 @@ func run() -> void:
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	root.notify_mouse_entered()
+	# Approved icon family once existed only in an uncommitted art checkout.
+	# Exercise the actual rulebook renderer, not merely file presence.
+	var art_book := Rulebook.new()
+	for role: StringName in [&"board", &"capture", &"hidden_trap", &"pawn_ability", &"corner", &"halfway", &"bread", &"wardrobe", &"store", &"vending", &"witch_shop", &"cauldron", &"spirit", &"boost", &"pawn_basics"]:
+		var image := Rulebook._art(role, Vector2(40, 40))
+		var atlas := image.texture as AtlasTexture
+		check(atlas != null, "Rulebook uses cropped artwork for %s" % role)
+		if atlas != null:
+			check(atlas.atlas.resource_path == "res://assets/ui/trickcal/rulebook/v04/%s.png" % role, "Approved v04 artwork remains connected: %s" % role)
+			check(atlas.region.has_area() and Rect2(Vector2.ZERO, atlas.atlas.get_size()).encloses(atlas.region), "Imported artwork crop stays inside %s" % role)
+		check(image.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Artwork never intercepts a chapter or entry click")
+		image.free()
+	var defense_sources: Dictionary = {}
+	for item: Dictionary in art_book._ch_capture()["entries"]:
+		if item["title"] in ["방어 카드", "잡기 방어", "공격 방어", "함정 방어", "만능 방어"]:
+			var texture := Rulebook.VISUALS.texture(item["art"]) as AtlasTexture
+			defense_sources[texture.atlas.resource_path] = true
+	check(defense_sources.size() == 5, "Defense overview and its four types have distinguishable illustrations")
+	art_book.free()
 	var parent := Control.new()
 	parent.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(parent)
