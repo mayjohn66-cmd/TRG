@@ -33,7 +33,7 @@
 
 | 야추 다이스 컵 쏟기 물리 인과 | 정령산 「정령 원기옥」 특수 승리 컷신 |
 |---|---|
-| ![야추 컵 쏟기 연출 가이드](docs/visual/spec_media/yacht_cup_pour.gif) | ![정령 원기옥 승리 컷신 가이드](docs/visual/spec_media/spirit_bomb_victory.gif) |
+| ![야추 컵 쏟기 연출 가이드](docs/visual/spec_media/yacht_cup_pour.gif) | ![정령 원기옥 승리 컷신 가이드](docs/visual/spec_media/spirit_bomb_victory_v02.webp) |
 
 ---
 
