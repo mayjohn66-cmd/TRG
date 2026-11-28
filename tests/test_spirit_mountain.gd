@@ -235,4 +235,20 @@ func test_spirit_bomb_stage_icon_and_cues() -> void:
 		check(a.orb_center().y - painted_radius >= 0.0, "최대 응집의 붓결이 화면 위로 잘리지 않는다")
 	a.free()
 	b.free()
+	var backdrop := preload("res://scenes/victory_symbol_background.gd").new()
+	backdrop.setup("LAW_02")
+	check(backdrop._pattern.spirit_bomb and backdrop._pattern.textures.has("spirit_bomb"), "정령 원기옥 전용 팝아트 삽화 연결")
+	backdrop.free()
+	var other := preload("res://scenes/victory_symbol_background.gd").new()
+	other.setup("LAW_04")
+	check(not other._pattern.spirit_bomb, "다른 특수 승리 배경은 유지")
+	other.free()
+	var preview_before: StringName = VictoryLaw.preview_board
+	VictoryLaw.preview_board = &"classic"
+	var ticket := preload("res://scenes/victory_symbol_background.gd").new()
+	ticket.setup("LAW_02")
+	check(not ticket._pattern.spirit_bomb and not ticket._pattern.textures.has("spirit_bomb"), "기본 보드 식권 승리에는 정령산 배경을 넣지 않는다")
+	ticket.free()
+	VictoryLaw.preview_board = preview_before
+	check(stage_script.BLAST_ART.get_width() <= 768, "전용 폭발 그림 런타임 해상도 제한")
 	_restore(saved)

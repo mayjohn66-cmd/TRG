@@ -4,6 +4,7 @@
 extends Control
 
 const ORB_ART: Texture2D = preload("res://assets/fx/spirit_bomb/v01/energy_orb.png")
+const BLAST_ART: Texture2D = preload("res://assets/fx/spirit_bomb/v02/eruption.png")
 
 const COUNT := 6
 const GATHER_START := 0.22
@@ -203,13 +204,16 @@ func _draw_impact(target: Vector2, impact: float, ratio: float, alpha: float) ->
 	var span := INTRO_SECONDS - IMPACT_AT
 	var t := clampf(impact / span, 0.0, 1.0)
 	var flash := 1.0 - smoothstep(0.0, 0.16, impact)
-	# 섬광: 백색 핵이 번쩍 터지고 (짧게), 시안 빛이 퍼지며 사라진다 + 시안 링
-	PaintedFx.stamp(self, ORB_ART, target, Vector2.ONE * (340.0 + 600.0 * t) * ratio, Color(1, 1, 1, flash * alpha))
-	for ray: int in 8:
-		var angle := ray * TAU / 8.0 + 0.12 * sin(ray * 2.1)
-		var direction := Vector2(cos(angle), sin(angle))
-		PaintedFx.streak(self, target, target + direction * (190.0 + 420.0 * t) * ratio, (100.0 - 65.0 * t) * ratio, Color(AURA_INNER, (1.0 - t) * 0.8 * alpha))
-	PaintedFx.stamp(self, PaintedFx.RIPPLE, target, Vector2(760.0, 300.0) * (0.4 + t) * ratio, Color(AURA_INNER, (1.0 - t) * 0.85 * alpha))
+	# A grounded cel-animation eruption: fast ignition, rising lobes, then a held cloud.
+	# Its lower edge stays planted; the cloud remains through the poster crossfade.
+	draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 0.76, 0.32, flash * 0.65 * alpha))
+	var rise := 1.0 - pow(1.0 - clampf(impact / 0.22, 0.0, 1.0), 3.0)
+	var swell := smoothstep(0.12, span + FADE_SECONDS, impact)
+	var extent := Vector2(lerpf(190.0, 850.0, rise) + 110.0 * swell, lerpf(80.0, 630.0, rise) + 30.0 * swell) * ratio
+	var base := Vector2(target.x, maxf(target.y + 145.0 * ratio, size.y * 0.88))
+	var shake := Vector2(sin(impact * 69.0), 0.0) * 5.0 * (1.0 - t) * ratio
+	PaintedFx.stamp(self, BLAST_ART, base - Vector2(0.0, extent.y * 0.5) + shake, extent, Color(1, 1, 1, alpha))
+	PaintedFx.stamp(self, PaintedFx.RIPPLE, base, Vector2(1080.0, 180.0) * (0.4 + t) * ratio, Color(1.0, 0.69, 0.20, (1.0 - t) * 0.7 * alpha))
 	# 4원소 불티: 정해진 각도로 방사 (시각만으로 정해진다)
 	for spark: int in SPARKS:
 		var angle := spark * TAU / SPARKS + 0.13 * sin(spark * 2.3)

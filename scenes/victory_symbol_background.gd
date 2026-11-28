@@ -22,6 +22,7 @@ class Stage extends Control:
 	var textures: Dictionary = {}
 	var time := 0.0
 	var racing := false
+	var spirit_bomb := false
 	var _unit := 1.0
 
 	func _p(x: float, y: float) -> Vector2:
@@ -75,7 +76,11 @@ class Stage extends Control:
 		if scene_id=="FINISH":
 			_finish_frame();return
 		if scene_id!="FINISH":draw_rect(Rect2(Vector2.ZERO,size),paper)
-		if scene_id=="LAW_03":TRAP_HILLS.poster(self,size,ink,accent,paper)
+		if spirit_bomb:
+			var zoom := 1.03 - 0.03 * _progress(0.0, 1.1)
+			var extent := size * zoom
+			draw_texture_rect(textures["spirit_bomb"], Rect2((size - extent) * 0.5, extent), false)
+		elif scene_id=="LAW_03":TRAP_HILLS.poster(self,size,ink,accent,paper)
 		else:_pop_backdrop()
 		match scene_id:
 			"FINISH": pass # Oversized red tire imprints remain unobstructed in the carried stage.
@@ -147,6 +152,9 @@ func setup(id: String) -> void:
 	_pattern.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_pattern)
 	_pattern.scene_id = id
+	_pattern.spirit_bomb = id=="LAW_02" and StringName(VictoryLaw.variant(id).get("stage", &""))==&"spirit_bomb"
+	if _pattern.spirit_bomb:
+		_pattern.textures["spirit_bomb"] = preload("res://assets/fx/spirit_bomb/v02/victory_poster.png")
 	_pattern.ink = Color(str(THEME.of(id)["ink"]))
 	_pattern.accent = Color(str(THEME.of(id)["accent"]))
 	_pattern.paper = Color(str(THEME.paper(id)))
