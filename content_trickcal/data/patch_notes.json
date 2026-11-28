@@ -159,6 +159,16 @@
        "ko": "[러시안 룰렛] 폭죽이 터질 때 밑에 뜨던 작은 문구를 없앴어요. [주식 차트]는 태블릿을 꺼내 든 다음 화면이 켜지고 시작해요. [캡슐뽑기]는 기계가 내려앉고 잠깐 있다가 레버 쪽으로 다가가요. [핀볼]도 야추처럼 판 가운데로 다가가 핀볼대를 위에 내려놓고 쏴요",
        "en": "Removed the small caption under the [Russian Roulette] confetti. The [Stock Chart] tablet is lifted up first, then its screen turns on. [Capsule Gacha] sits for a moment after landing before moving in on the lever. [Pinball] now moves to the middle of the board like Yacht, and the pinball table is set down there before you launch",
        "ja": "［ロシアンルーレット］の紙吹雪の下に出ていた小さな文字をなくしました。［株価チャート］はタブレットを取り出してから画面がついて始まります。［カプセルガチャ］は機械が置かれて少したってからレバーに寄ります。［ピンボール］もヨットのようにボード中央に寄って、台を置いてから発射します"
+      },
+      {
+       "ko": "[야추 다이스]의 컵이 진짜로 움직여요: 주사위를 품고 흔들리다가 펠트 쪽으로 기울어 입구에서 주사위를 쏟아 내고, 다시 바로 서요",
+       "en": "The [Yacht Dice] cup now really moves: it shakes the dice, tilts toward the felt and pours them out of its mouth, then stands back up",
+       "ja": "［ヨットダイス］のカップが本当に動きます：サイコロを入れて振り、フェルトの方へ傾けて口から注ぎ出し、また立ち直ります"
+      },
+      {
+       "ko": "규칙 도감과 생떼 카드 설명을 지금 규칙에 맞게 다듬었어요: 법전은 8라운드(과열)부터 나오고 오른 순간부터 모두 0에서 다시 세요, 기물 9계열, 필살기는 아래 기물 독에서, 카드 색(발동 주황·소환 청록), 오이 카드·손패 한도 안내 등",
+       "en": "Polished the Rulebook and card texts to match the current rules: laws appear from Round 8 (Overheat) and everyone counts from 0 once enacted, 9 piece families, specials from the piece dock below, card colours (Action orange, Summon teal), cucumber card and hand limit notes, and more",
+       "ja": "ルール図鑑と生意気カードの説明を今のルールに合わせて整えました：法典は8ラウンド（過熱）から登場し、載った瞬間から全員0から数え直し、駒9系統、必殺技は下の駒ドックから、カードの色（発動オレンジ・召喚青緑）、キュウリカード・手札上限の案内など"
       }
      ]
     },
@@ -193,6 +203,11 @@
        "ko": "쉬운 난이도(크림·로제)의 컴퓨터는 1~3라운드에 내 말을 잡는 수를 되도록 피해요. 초반에 서로 잡고 잡히기만 반복되지 않게 했어요 (제보 감사합니다!)",
        "en": "On the easy difficulties (Cream and Rosé), computer players now avoid capturing your pawns in rounds 1–3 whenever they have another move, so the opening isn't just endless back-and-forth captures (thanks for the report!)",
        "ja": "やさしい難易度（クリーム・ロゼ）のコンピューターは、1〜3ラウンドの間は自分の駒を捕まえる手をできるだけ避けます。序盤に捕まえ合いばかり繰り返さないようにしました（ご報告ありがとうございます！）"
+      },
+      {
+       "ko": "[지하노역장 친치로]가 진짜 친치로가 됐어요: 4·5·6만 그려진 카이지 사기 주사위 3개를 그릇에 던져요. 4·5·6의 눈(4~6칸) · 시고로 4·5·6(8칸) · 아라시 444·555(10칸) · ★666 아라시(12칸 + 한 번 더)! 단 1/6 확률로 주사위가 그릇 밖으로 튀면 쇼벤(낙), 0칸 + 턴 종료예요",
+       "en": "[Underground Chinchiro] is now real Chinchiro: throw three rigged Kaiji dice with only 4, 5 and 6 into the bowl. Eye of 4·5·6 (4-6 spaces) · Shigoro 4-5-6 (8) · Storm 444·555 (10) · ★666 Storm (12 + roll again)! But with a 1/6 chance a die bounces out of the bowl: Shoben, 0 spaces and your turn ends",
+       "ja": "［地下強制労働所チンチロ］が本物のチンチロになりました：4・5・6だけのカイジのイカサマサイコロ3個をお椀に投げます。4・5・6の目（4〜6マス）・シゴロ 4・5・6（8マス）・アラシ 444・555（10マス）・★666アラシ（12マス＋もう一回）！ただし1/6の確率でサイコロがお椀の外に飛ぶとションベン、0マスでターン終了です"
       }
      ]
     },
