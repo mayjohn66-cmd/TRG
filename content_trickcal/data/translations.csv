@@ -3586,3 +3586,6 @@ TRPG,TRPG,TRPG
 공격해 온 적 말 사출,Launch the attacker,攻撃してきた敵駒を射出
 적 선두 말 사출,Launch enemy lead,敵の先頭を射出
 빛 기둥 사출 질주,"Beam run, launches all",光の柱で射出疾走
+전체,All,すべて
+보드 %d/%d ▶,Board %d/%d ▶,ボード %d/%d ▶
+굴리기 전에 카드 1장 · 필살기 사용 (안 써도 돼요),1 card before rolling · use your special (optional),振る前にカード1枚・必殺技も (使わなくてもOK)
