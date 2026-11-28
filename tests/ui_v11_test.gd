@@ -56,7 +56,7 @@ func _run() -> void:
 	_expect(idle != null and idle.get_global_rect().get_center().distance_to(_board._board_center()) < 2.0, "과녁은 보드 한가운데에 있다")
 	_expect(idle != null and idle.is_processing() and idle._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and not idle._reticle.visible, "과녁이 그려진다 (조준점 없음)")
 	await settle(10)
-	_expect(idle != null and is_zero_approx(idle._board.rotation.z) and not is_zero_approx(idle._face.rotation.z), "1.3.1: 대기 과녁은 과녁 판만 돈다 (테두리·받침은 그대로)")
+	_expect(idle != null and is_zero_approx(idle._frame.rotation.z) and not is_zero_approx(idle._board.rotation.z), "1.3.1: 대기 과녁은 과녁 판만 돈다 (테두리·받침 모델은 그대로)")
 	state.tools[me] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
 	await settle(4)
