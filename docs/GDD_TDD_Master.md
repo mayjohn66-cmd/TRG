@@ -7,8 +7,9 @@
 >
 > - **규칙 충돌 · 연출 순서 명세:** [`EDGE_CASE_SPEC.md`](EDGE_CASE_SPEC.md)
 > - **연출 · 모션 · 카메라 기획서 (도구 21종 소품 동작):** [`PRESENTATION_SPEC.md`](PRESENTATION_SPEC.md)
+> - **규칙 도감 기획 및 검수 명세서 (11개 장):** [`RULEBOOK_SPEC.md`](RULEBOOK_SPEC.md)
 > - **프로젝트 요약 · 협업 파이프라인 · 변천사:** [`FINAL_GAME_DESIGN_AND_HISTORY.md`](FINAL_GAME_DESIGN_AND_HISTORY.md)
-> - **시간순 개발 의사결정 아카이브 (`6.1 ~ 7.137`):** [`DEV_HISTORY.md`](DEV_HISTORY.md)
+> - **시간순 개발 의사결정 아카이브 (`6.1 ~ 7.138`):** [`DEV_HISTORY.md`](DEV_HISTORY.md)
 > - **버전별 변경 내역:** [`../CHANGELOG.md`](../CHANGELOG.md) · **시각 자산 규격서:** [`visual/Visual_Asset_Guide_Draft.md`](visual/Visual_Asset_Guide_Draft.md)
 
 ---
@@ -377,7 +378,7 @@
 
 ### 4.4-c 규칙 도감
 
-허브 상단 책 아이콘 또는 인게임 메뉴의 `[규칙 책자]`(`Rulebook`)로 열며, 우측 상단에 `[기록 백업/복구]` 기능을 함께 제공한다.
+허브 상단 책 아이콘 또는 인게임 메뉴의 `[규칙 책자]`(`Rulebook`)로 열며, 우측 상단에 `[기록 백업/복구]` 기능을 함께 제공한다. 11개 장 세부 구성·동적 데이터 연동 원칙 및 `rulebook.gd` 검수 교정 사양은 [`RULEBOOK_SPEC.md`](RULEBOOK_SPEC.md)를 따른다.
 
 | 상단 탭 | 하위 장(챕터) | 수록 구성 |
 |---|---|---|
@@ -553,4 +554,4 @@ res://
 
 ## 6. 개발 기록 안내
 
-초기 프로토타입(`Ver.1`)부터 `1.3.1`에 이르기까지의 시간순 상세 개발 이력과 의사결정 사항(`6.1 ~ 7.137`)은 [`DEV_HISTORY.md`](DEV_HISTORY.md)에 통합 보관되어 있다.
+초기 프로토타입(`Ver.1`)부터 `1.3.1`에 이르기까지의 시간순 상세 개발 이력과 의사결정 사항(`6.1 ~ 7.138`)은 [`DEV_HISTORY.md`](DEV_HISTORY.md)에 통합 보관되어 있다.
