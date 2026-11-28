@@ -3068,7 +3068,7 @@ TRPG,TRPG,TRPG
 그림은 지금 고른 보드판이에요,The picture shows the board you picked,図は今選んでいるボードです
 특수 칸은 대부분 [b]딱 멈출 때만[/b] 작동해요,Most special tiles work [b]only on an exact stop[/b],特殊マスはほとんど[b]ぴったり止まった時だけ[/b]発動します
 보드판 고르기,Choosing a Board,ボードの選び方
-"출발·코너·반환점·부스터 발판은 모든 보드판이 같아요 (기본 규칙 → 특수 칸)","Start, corners, halfway and booster pads are the same on every board (Basic Rules → Special Tiles)",スタート・コーナー・折り返し・ブースター床はどのボードも同じです (基本ルール → 特殊マス)
+출발·코너·반환점·부스터 발판은 모든 보드판이 같아요 (기본 규칙 → 특수 칸),"Start, corners, halfway and booster pads are the same on every board (Basic Rules → Special Tiles)",スタート・コーナー・折り返し・ブースター床はどのボードも同じです (基本ルール → 特殊マス)
 생떼 카드 여러 장 (도감 → 보급),Several Tantrum Cards (Catalog → Supply),駄々っ子カード複数枚 (図鑑 → 補給)
 기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 보급),Mutation · All-Troop Mutation · Skill Refill (Catalog → Supply),駒変異 · 全軍突然変異 · 必殺技リフィル (図鑑 → 補給)
 칼\n꽂기,Insert\nsword,剣を\n刺す
@@ -3485,3 +3485,21 @@ TRPG,TRPG,TRPG
 측면 손잡이를 아래로 당겼다 놓으세요,Pull the side handle down and release,側面の取っ手を下に引いて離してください
 레버를 당기세요! (스페이스),Pull the lever! (Space),レバーを引いて！(スペース)
 레버를 돌리세요!,Turn the lever!,レバーを回して！
+쇼벤! (낙),Shoben! (Out),ションベン！
+★666 아라시!,★666 Storm!,★666アラシ！
+아라시!,Storm!,アラシ！
+시고로!,Shigoro!,シゴロ！
+%d의 눈,Eye of %d,%dの目
+사기 주사위 3개를 굴려 족보만큼 전진한다,Throw three rigged dice and advance by the hand,イカサマサイコロ3個を振って役の分だけ前進する
+★666 아라시 12칸+한 번 더,★666 Storm: 12 spaces + roll again,★666アラシ 12マス+もう一回
+0칸 · 턴 종료 (1/6),0 spaces · turn ends (1/6),0マス・ターン終了 (1/6)
+4 · 5 · 6의 눈,Eye of 4 · 5 · 6,4・5・6の目
+4 · 5 · 6칸,4 · 5 · 6 spaces,4・5・6マス
+시고로 4·5·6,Shigoro 4-5-6,シゴロ 4・5・6
+아라시 444 · 555,Storm 444 · 555,アラシ 444・555
+★666 아라시,★666 Storm,★666アラシ
+주사위 면은 4·4·5·5·6·6 (카이지 사기 주사위) · 그릇 밖 = 쇼벤,Dice faces are 4·4·5·5·6·6 (rigged Kaiji dice) · out of the bowl = Shoben,サイコロの面は4・4・5・5・6・6（カイジのイカサマサイコロ）・お椀の外 = ションベン
+"족보표: 쇼벤(낙, 1/6) 0칸+턴 종료 / 4·5·6의 눈(4·5·6) / 시고로 4·5·6(8) / 아라시 444·555(10) / ★666 아라시(12칸+한번더)","Hands: Shoben (out, 1/6) 0 spaces + turn ends / Eye of 4·5·6 (4·5·6) / Shigoro 4-5-6 (8) / Storm 444·555 (10) / ★666 Storm (12 spaces + roll again)",役表: ションベン(1/6) 0マス+ターン終了 / 4・5・6の目(4・5・6) / シゴロ 4・5・6(8) / アラシ 444・555(10) / ★666アラシ(12マス+もう一回)
+"(0칸, 턴 종료)","(0 spaces, turn ends)",(0マス、ターン終了)
+"• 족보표: 쇼벤(낙, 1/6) 0칸+턴 종료 / 4·5·6의 눈(4·5·6) / 시고로 4·5·6(8) / 아라시 444·555(10) / ★666 아라시(12칸+한번더)","• Hands: Shoben (out, 1/6) 0 spaces + turn ends / Eye of 4·5·6 (4·5·6) / Shigoro 4-5-6 (8) / Storm 444·555 (10) / ★666 Storm (12 spaces + roll again)",• 役表: ションベン(1/6) 0マス+ターン終了 / 4・5・6の目(4・5・6) / シゴロ 4・5・6(8) / アラシ 444・555(10) / ★666アラシ(12マス+もう一回)
+카이지 4·5·6 사기 주사위 3개를 굴려 족보만큼 전진한다,Throw three rigged Kaiji 4-5-6 dice and advance by the hand.,カイジの4・5・6イカサマサイコロ3個を振り、役の分だけ前進する

@@ -41,6 +41,24 @@ func test_chinchiro_bounces_stay_inside_the_bowl_and_keep_every_loaded_result() 
 				var final: Transform3D = DiceRoll3D.bowl_pose_at(1.0,face,power,entry)
 				check_eq(DiceRoll3D.top_face(final.basis.orthonormalized().get_rotation_quaternion()),face,"loaded die result is preserved")
 				check(final.is_equal_approx(DiceRoll3D.bowl_pose_at(3.0,face,power,entry)),"result remains still in the bowl")
+	# 1.3.1: 주사위 3개는 각자 자리에 멈추고 서로 겹치지 않는다. 쇼벤 주사위는 테두리를 넘어 그릇 밖 바닥에 멈춘다.
+	for index: int in 3:
+		var rest: Vector2 = DiceRoll3D.BOWL_RESTS[index]
+		for time: float in [0.55, 0.70, 0.85, 1.0]:
+			var pose: Transform3D = DiceRoll3D.bowl_pose_at(time, 5, 0.5, Vector2(1, 1), rest)
+			for vertex: int in range(0, vertices.size(), 32):
+				var point: Vector3 = pose * vertices[vertex]
+				check(point.y >= Bowl.floor_height(Vector2(point.x, point.z).length()) - 0.002, "every die stays above the ceramic")
+		for other: int in range(index + 1, 3):
+			check(rest.distance_to(DiceRoll3D.BOWL_RESTS[other]) > 2.0 * Bowl.DIE_SCALE * 0.95, "resting dice do not overlap")
+	for entry: Vector2 in [Vector2(-1, -1), Vector2(1, 1)]:
+		for face: int in [1, 3, 5]:
+			var out: Transform3D = DiceRoll3D.bowl_pose_at(1.0, face, 0.5, entry, Vector2.ZERO, true)
+			check(Vector2(out.origin.x, out.origin.z).length() > 3.5, "shoben die lands outside the bowl rim")
+			check_eq(DiceRoll3D.top_face(out.basis.orthonormalized().get_rotation_quaternion()), face, "shoben die still shows its engine face")
+			var mid: Transform3D = DiceRoll3D.bowl_pose_at(0.62, face, 0.5, entry, Vector2.ZERO, true)
+			check(mid.origin.y > 2.2, "shoben die clears the rim on its way out")
+			check(DiceRoll3D.bowl_pose_at(DiceRoll3D.BOWL_CONTACTS[0] - 0.00001, face, 0.5, entry, Vector2.ZERO, true).origin.distance_to(DiceRoll3D.bowl_pose_at(DiceRoll3D.BOWL_CONTACTS[0] + 0.00001, face, 0.5, entry, Vector2.ZERO, true).origin) < 0.01, "leaving the bowl starts from the wall contact")
 	for contact: float in DiceRoll3D.BOWL_CONTACTS:
 		var before: Transform3D = DiceRoll3D.bowl_pose_at(contact-0.00001,3,0.75,Vector2(1,1))
 		var after: Transform3D = DiceRoll3D.bowl_pose_at(contact+0.00001,3,0.75,Vector2(1,1))
@@ -91,16 +109,16 @@ func test_tumbling_corners_never_pass_below_the_table() -> void:
 				check(before.origin.distance_to(after.origin) < 0.002, "bounce contacts never teleport the die")
 
 
-func test_chinchiro_faces_match_the_engine_including_negative_six() -> void:
+func test_chinchiro_faces_are_the_kaiji_four_five_six() -> void:
 	var values: Array[int] = DiceRoll3D.face_values(&"CHINCHIRO")
-	check_eq(values, [4, 4, 5, 5, 6, -6] as Array[int], "loaded die has the engine's six values")
+	check_eq(values, [4, 4, 5, 5, 6, 6] as Array[int], "loaded dice show only 4·4·5·5·6·6 (no 1~3 pips)")
 	for physical_side: int in range(1, 7):
-		var value: int = values[physical_side - 1]
-		check_eq(DiceRoll3D.pip_positions(absi(value)).size(), absi(value), "every loaded side has its painted pip count")
-		var pose: Transform3D = DiceRoll3D.pose_at(DiceRoll3D.ROLL_TIME, physical_side, 0.5)
-		check_eq(values[DiceRoll3D.top_face(pose.basis.get_rotation_quaternion()) - 1], value, "all six painted sides can rest face-up")
-	for value: int in [4, 5, 6, -6]:
-		var side: int = DiceRoll3D.physical_face_for(value, &"CHINCHIRO")
-		check_eq(values[side - 1], value, "outcome selects a matching physical side")
-	check(DiceRoll3D.physical_face_for(6, &"CHINCHIRO") != DiceRoll3D.physical_face_for(-6, &"CHINCHIRO"), "six and oops are distinct physical faces")
+		check_eq(DiceRoll3D.pip_positions(values[physical_side - 1]).size(), values[physical_side - 1], "every loaded side has its painted pip count")
+	for value: int in [4, 5, 6]:
+		var sides: Dictionary = {}
+		for index: int in 3:
+			var side: int = DiceRoll3D.physical_face_for_die(value, index)
+			check_eq(values[side - 1], value, "each die selects a matching physical side")
+			sides[side] = true
+		check(sides.size() == 2, "the two matching sides alternate between dice")
 	check_eq(DiceRoll3D.face_values(&"D6"), [1, 2, 3, 4, 5, 6] as Array[int], "ordinary D6 keeps its original faces")

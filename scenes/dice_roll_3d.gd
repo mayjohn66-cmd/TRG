@@ -41,6 +41,19 @@ var _camera: Camera3D
 var bowl: Node3D
 var _bowl_shadow: MeshInstance3D
 var _bowl_entry: Vector2 = Vector2(0.8, 0.6)
+## 친치로 (1.3.1 리워크): 사기 주사위 3개. die가 첫째, _extra가 둘째·셋째. 결과 눈·그릇 밖으로 나가는 주사위는 엔진이 정한다.
+const CHINCHIRO_DICE: int = 3
+## 주사위마다 그릇에 들어오는 시차 (초).
+const DIE_STAGGER: float = 0.035
+## 주사위 3개가 멈추는 자리 (그릇 바닥 좌표, 서로 겹치지 않게).
+const BOWL_RESTS: Array[Vector2] = [Vector2(-1.05, 0.25), Vector2(0.15, -0.55), Vector2(1.05, 0.5)]
+## 쇼벤 주사위가 떨어지는 그릇 밖 바닥 (화면 쪽으로 튀어 나와 보이게).
+const OUT_REST: Vector2 = Vector2(3.5, 2.2)
+var dice_values: Array[int] = []
+var out_index: int = -1
+var _extra: Array[Node3D] = []
+var _extra_shadows: Array[MeshInstance3D] = []
+var _dice_faces: Array[int] = []
 
 
 func _init() -> void:
@@ -79,9 +92,28 @@ func _ready() -> void:
 	shadow.material_override = shadow_material
 	shadow.position.y = 0.005
 	render_view.add_child(shadow)
-	die = Node3D.new()
-	die.name = "ToyDie"
+	die = _make_die("ToyDie")
 	render_view.add_child(die)
+	_pips = die.get_node("Pips")
+	# 친치로의 둘째·셋째 주사위 (같은 메시를 함께 쓴다, 평소에는 숨김)
+	for index: int in CHINCHIRO_DICE - 1:
+		var extra: Node3D = _make_die("ToyDie%d" % (index + 2))
+		extra.visible = false
+		render_view.add_child(extra)
+		_extra.append(extra)
+		var extra_shadow := MeshInstance3D.new()
+		extra_shadow.mesh = shadow.mesh
+		var extra_material := ShaderMaterial.new()
+		extra_material.shader = SHADOW_SHADER
+		extra_shadow.material_override = extra_material
+		extra_shadow.visible = false
+		render_view.add_child(extra_shadow)
+		_extra_shadows.append(extra_shadow)
+
+
+func _make_die(node_name: String) -> Node3D:
+	var node := Node3D.new()
+	node.name = node_name
 	if _body_mesh == null:
 		_body_mesh = _make_body_mesh()
 	var outline := MeshInstance3D.new()
@@ -89,20 +121,22 @@ func _ready() -> void:
 	var ink := ShaderMaterial.new()
 	ink.shader = OUTLINE_SHADER
 	outline.material_override = ink
-	die.add_child(outline)
+	node.add_child(outline)
 	var body := MeshInstance3D.new()
 	body.mesh = _body_mesh
 	var cream := ShaderMaterial.new()
 	cream.shader = BODY_SHADER
 	body.material_override = cream
-	die.add_child(body)
-	_pips = MeshInstance3D.new()
-	_pips.mesh = _pip_mesh_for(&"D6")
+	node.add_child(body)
+	var pips := MeshInstance3D.new()
+	pips.name = "Pips"
+	pips.mesh = _pip_mesh_for(&"D6")
 	var paint := StandardMaterial3D.new()
 	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	paint.vertex_color_use_as_albedo = true
-	_pips.material_override = paint
-	die.add_child(_pips)
+	pips.material_override = paint
+	node.add_child(pips)
+	return node
 
 
 ## 이어서 굴리기 (1.3.1 제자리 점프): 보드에 놓여 있던 주사위 자세에서 시작해 START_BLEND 동안 평소 굴림 자세로 섞여 들어간다.
@@ -128,7 +162,14 @@ func _blend_start(pose: Transform3D, seconds: float) -> Transform3D:
 
 
 func begin(value: int, power: float, tool_id: StringName = &"D6") -> void:
+	if tool_id == &"CHINCHIRO":
+		begin_chinchiro([4, 5, 6] as Array[int], -1, power)  # 엔진 결과 없이 쓸 때(대기 소품): 4·5·6이 놓인 그릇
+		return
 	_tool_id = tool_id
+	for extra: Node3D in _extra:
+		extra.visible = false
+	for extra_shadow: MeshInstance3D in _extra_shadows:
+		extra_shadow.visible = false
 	_start_pose = null
 	result_value = value
 	result_face = physical_face_for(value, tool_id)
@@ -138,6 +179,58 @@ func begin(value: int, power: float, tool_id: StringName = &"D6") -> void:
 	_configure_bowl(tool_id == &"CHINCHIRO")
 	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	apply_time(0.0)
+
+
+## 친치로: 엔진이 정한 주사위 3개의 눈과 그릇 밖으로 나가는 주사위(쇼벤, 없으면 -1)로 굴린다.
+func begin_chinchiro(values: Array[int], out_die: int, power: float) -> void:
+	_tool_id = &"CHINCHIRO"
+	_start_pose = null
+	dice_values = values.duplicate()
+	while dice_values.size() < CHINCHIRO_DICE:
+		dice_values.append(4)
+	out_index = out_die
+	_dice_faces.clear()
+	for index: int in CHINCHIRO_DICE:
+		_dice_faces.append(physical_face_for_die(dice_values[index], index))
+	result_value = dice_values[0]
+	result_face = _dice_faces[0]
+	var mesh: ArrayMesh = _pip_mesh_for(&"CHINCHIRO")
+	_pips.mesh = mesh
+	for extra: Node3D in _extra:
+		(extra.get_node("Pips") as MeshInstance3D).mesh = mesh
+		extra.visible = true
+	for extra_shadow: MeshInstance3D in _extra_shadows:
+		extra_shadow.visible = true
+	_power = clampf(power, 0.0, 1.0)
+	settled = false
+	_configure_bowl(true)
+	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	apply_time(0.0)
+
+
+## 같은 눈이 두 면에 있는 사기 주사위: 주사위마다 다른 면을 써서 세 개가 똑같아 보이지 않게 한다.
+static func physical_face_for_die(value: int, index: int) -> int:
+	var sides: Array[int] = []
+	var faces: Array[int] = face_values(&"CHINCHIRO")
+	for side: int in faces.size():
+		if faces[side] == value:
+			sides.append(side + 1)
+	return sides[index % sides.size()] if not sides.is_empty() else 1
+
+
+## 주사위 3개의 지금 윗면 눈 (친치로).
+func displayed_values() -> Array[int]:
+	var values: Array[int] = []
+	var faces: Array[int] = face_values(_tool_id)
+	for node: Node3D in _all_dice():
+		values.append(faces[top_face(node.quaternion) - 1])
+	return values
+
+
+func _all_dice() -> Array[Node3D]:
+	var nodes: Array[Node3D] = [die]
+	nodes.append_array(_extra)
+	return nodes
 
 
 static func face_values(tool_id: StringName) -> Array[int]:
@@ -218,8 +311,10 @@ func set_bowl_entry(screen_direction: Vector2) -> void:
 
 ## Throw into the fixed bowl, glance off the curved side, rebound across the
 ## floor, and settle on the engine's physical face. No random outcome is drawn.
-static func bowl_pose_at(seconds: float, face: int, power: float, entry: Vector2) -> Transform3D:
+static func bowl_pose_at(seconds: float, face: int, power: float, entry: Vector2, rest: Vector2 = Vector2(0.08, 0.02), thrown_out: bool = false) -> Transform3D:
 	var u: float = clampf(seconds / ROLL_TIME, 0, 1)
+	if thrown_out and u >= BOWL_CONTACTS[0]:
+		return _out_pose_at(u, seconds, face, power, entry)
 	var source: Vector2 = entry.normalized()
 	var turn: Quaternion = pose_at(seconds, face, power).basis.get_rotation_quaternion()
 	var floor_point: Vector2
@@ -236,7 +331,7 @@ static func bowl_pose_at(seconds: float, face: int, power: float, entry: Vector2
 		lift = sin(PI*p) * lerpf(0.32, 0.50, power)
 	else:
 		var p: float = (u-BOWL_CONTACTS[1]) / (1.0-BOWL_CONTACTS[1])
-		floor_point = (-source*0.85).lerp(Vector2(0.08,0.02),1.0-pow(1.0-p,2.0))
+		floor_point = (-source*0.85).lerp(rest,1.0-pow(1.0-p,2.0))
 		lift = sin(PI*p) * 0.14 * (1.0-p)
 	var support: float = BOWL_MODEL.support_y(turn, floor_point)
 	var y: float = support + maxf(lift, 0.0)
@@ -247,13 +342,51 @@ static func bowl_pose_at(seconds: float, face: int, power: float, entry: Vector2
 	return Transform3D(Basis(turn).scaled(Vector3.ONE * BOWL_MODEL.DIE_SCALE), Vector3(floor_point.x, y, floor_point.y))
 
 
+## 쇼벤: 첫 벽 충돌 뒤 그릇 테두리를 넘어 바깥 바닥(OUT_REST 쪽)으로 튕겨 나가 한두 번 튀고 멈춘다.
+static func _out_pose_at(u: float, seconds: float, face: int, power: float, entry: Vector2) -> Transform3D:
+	var source: Vector2 = entry.normalized()
+	var turn: Quaternion = pose_at(seconds, face, power).basis.get_rotation_quaternion()
+	var outside: Vector2 = Vector2(OUT_REST.x * (-1.0 if source.x > 0.0 else 1.0), OUT_REST.y)  # 들어온 반대쪽으로
+	var ground: float = support_height(turn) * BOWL_MODEL.DIE_SCALE
+	var start: Vector2 = source * 1.45
+	var hop_end: float = 0.82
+	var point: Vector2
+	var y: float
+	if u < hop_end:
+		var p: float = (u - BOWL_CONTACTS[0]) / (hop_end - BOWL_CONTACTS[0])
+		point = start.lerp(outside, smoothstep(0.0, 1.0, p))
+		var start_y: float = BOWL_MODEL.support_y(turn, start)
+		y = lerpf(start_y, ground, p) + sin(PI * p) * lerpf(2.6, 3.2, power)  # 테두리(약 1.9)를 넘는 높이
+	else:
+		var p: float = (u - hop_end) / (1.0 - hop_end)
+		point = outside + (outside - start).normalized() * 0.25 * (1.0 - pow(1.0 - p, 2.0))
+		y = ground + sin(PI * p) * 0.22 * (1.0 - p)
+	return Transform3D(Basis(turn).scaled(Vector3.ONE * BOWL_MODEL.DIE_SCALE), Vector3(point.x, y, point.y))
+
+
 func _apply_bowl_time(seconds: float) -> void:
-	die.transform = _blend_start(bowl_pose_at(seconds, result_face, _power, _bowl_entry), seconds)
+	var nodes: Array[Node3D] = _all_dice()
+	var shadows: Array[MeshInstance3D] = [shadow]
+	shadows.append_array(_extra_shadows)
+	var span: float = ROLL_TIME / (ROLL_TIME + DIE_STAGGER * (CHINCHIRO_DICE - 1))  # 마지막 주사위도 ROLL_TIME에 멈춘다
+	for index: int in nodes.size():
+		var node: Node3D = nodes[index]
+		if index > 0 and not node.visible:
+			continue
+		var local: float = clampf((seconds - DIE_STAGGER * index) / span, 0.0, ROLL_TIME)
+		var face: int = _dice_faces[index] if index < _dice_faces.size() else result_face
+		var entry: Vector2 = _bowl_entry.rotated((index - 1) * 0.35)
+		var rest: Vector2 = BOWL_RESTS[index]
+		var pose: Transform3D = bowl_pose_at(local, face, _power, entry, rest, index == out_index)
+		node.transform = _blend_start(pose, seconds) if index == 0 else pose
+		var outside: bool = index == out_index and node.position.distance_to(Vector3(0, node.position.y, 0)) > 3.2
+		var floor_y: float = 0.012 if outside else BOWL_MODEL.FLOOR_Y + 0.012
+		var lift: float = maxf(node.position.y - floor_y - BOWL_MODEL.DIE_SCALE, 0.0)
+		var shade: MeshInstance3D = shadows[index]
+		shade.position = Vector3(node.position.x, floor_y, node.position.z)
+		shade.scale = Vector3.ONE * (0.72 + lift * 0.10)
+		(shade.material_override as ShaderMaterial).set_shader_parameter("opacity", 0.30/(1.0+lift*1.5))
 	settled = seconds >= ROLL_TIME
-	shadow.position = Vector3(die.position.x, BOWL_MODEL.FLOOR_Y+0.012, die.position.z)
-	var lift: float = maxf(die.position.y - BOWL_MODEL.FLOOR_Y - BOWL_MODEL.DIE_SCALE, 0.0)
-	shadow.scale = Vector3.ONE * (0.72 + lift * 0.10)
-	(shadow.material_override as ShaderMaterial).set_shader_parameter("opacity", 0.30/(1.0+lift*1.5))
 
 
 ## Board presenter owns flight and travel in screen space. Keep the 3D die's

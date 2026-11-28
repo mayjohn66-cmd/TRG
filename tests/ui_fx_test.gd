@@ -566,19 +566,30 @@ func _test_presenters() -> void:
 	var ordinary_mesh: Mesh = die_view._pips.mesh
 	# D6 above already measures the shared real-time animation. Sample each new
 	# face at completion without advancing the live game's unrelated turn timer.
-	for value: int in [4, 5, 6, -6]:
-		presenter.play(&"CHINCHIRO", {"steps": maxi(value, 0), "details": {"face": value, "oops": value == -6}}, 0.8)
+	# 1.3.1 리워크: 카이지 4·5·6 사기 주사위 3개 + 쇼벤 (기획서 PRESENTATION 2.1)
+	for case: Array in [[[4, 4, 5], -1], [[6, 6, 6], -1], [[4, 5, 6], -1], [[5, 4, 6], 1]]:
+		var thrown: Array[int] = []
+		thrown.assign(case[0])
+		var shoben: bool = int(case[1]) >= 0
+		var steps: int = 0 if shoben else ToolChinchiro.steps_of(thrown)
+		var chin: Dictionary = {"dice": thrown, "hand": ToolChinchiro.HAND_SHOBEN if shoben else ToolChinchiro.hand_of(thrown), "shoben": shoben, "out_index": int(case[1]), "eye": ToolChinchiro.eye_of(thrown)}
+		presenter.play(&"CHINCHIRO", {"steps": steps, "ends_turn": shoben, "details": chin}, 0.8)
 		_expect(die_view.bowl != null and die_view.bowl.visible and not presenter._ground_shadow.visible, "친치로는 깊이가 있는 전용 그릇 안에서 굴린다")
+		_expect(die_view._extra.all(func(node: Node3D) -> bool: return node.visible), "친치로는 주사위 3개")
 		var bowl_center: Vector2 = die_view.get_global_transform() * (die_view.size / 2.0)
 		presenter._update(0.40)
 		_expect((die_view.get_global_transform()*(die_view.size/2.0)).distance_to(bowl_center)<1.0,"그릇은 보드에 고정되고 주사위만 날아든다")
 		presenter._process(DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME + RollPresenter.RESULT_SUSPENSE)  # 1.3.1: 멈춘 뒤 뜸 들였다가 끝난다
-		_expect(presenter._dice_3d == die_view, "loaded die shares the same 3D viewport")
-		_expect(die_view.displayed_value() == value and presenter.last_display == str(maxi(value, 0)), "loaded physical face and displayed result match %d" % value)
-		_expect(die_view._pips.mesh != ordinary_mesh, "loaded die uses its own face paint")
-		_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "loaded die stops rendering after result")
-		if value < 0:
-			_expect(presenter._die_label.text.contains("0칸") and not presenter._die_label.text.contains("후퇴"), "oops is shown as a zero-tile failure, never a retreat")
+		_expect(presenter._dice_3d == die_view, "loaded dice share the same 3D viewport")
+		_expect(die_view.displayed_values() == thrown and presenter.last_display == str(steps), "세 주사위의 윗면이 엔진 눈과 같다 %s (%s)" % [str(thrown), str(die_view.displayed_values())])
+		_expect(die_view._pips.mesh != ordinary_mesh, "loaded dice use their own face paint")
+		_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "loaded dice stop rendering after result")
+		if shoben:
+			var out_die: Node3D = die_view._all_dice()[int(case[1])]
+			_expect(Vector2(out_die.position.x, out_die.position.z).length() > 3.5, "쇼벤 주사위는 그릇 밖에 멈춘다")
+			_expect(presenter._die_label.text.contains("쇼벤") and not presenter._die_label.text.contains("후퇴"), "쇼벤은 0칸 실패로 보이고 후퇴가 아니다")
+		else:
+			_expect(presenter._die_label.text.contains(ToolChinchiro.hand_name(chin)), "족보 이름이 보인다 (%s)" % presenter._die_label.text)
 	presenter.play(&"D6", {"steps": 1, "details": {"face": 1}}, 0.5)
 	_expect(die_view._pips.mesh == ordinary_mesh, "switching back restores ordinary D6 pips")
 	_expect(not die_view.bowl.visible and die_view.custom_minimum_size == DiceRoll3D.VIEW_SIZE and die_view.render_view.size == DiceRoll3D.RENDER_SIZE,"친치로 뒤 기본 주사위는 그릇·큰 카메라를 남기지 않는다")
@@ -1768,7 +1779,7 @@ func _test_hud_overhaul() -> void:
 	_expect(not _board._tool_rules.visible, "다시 누르면 접힌다")
 	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()
-	_expect(_board._tool_title.text == "지하노역장 친치로" and _board._tool_main.text == "주사위를 굴려 전진한다", "친치로 카드 문구 (%s)" % _board._tool_main.text)
+	_expect(_board._tool_title.text == "지하노역장 친치로" and _board._tool_main.text == "카이지 4·5·6 사기 주사위 3개를 굴려 족보만큼 전진한다", "친치로 카드 문구 (%s)" % _board._tool_main.text)
 	for tool_id: StringName in ToolRegistry.ALL_IDS:
 		manager.state.tools[current] = ToolRegistry.create(tool_id)
 		_board._refresh_controls()

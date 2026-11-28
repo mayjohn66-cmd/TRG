@@ -1105,8 +1105,16 @@ func _build(tool_id: StringName) -> void:
 			else:
 				_dice_3d.reparent(_stage)
 			_dice_3d.show()
-			_final_face = int((_result.get("details", {}) as Dictionary).get("face", _result.get("steps", 1)))
-			_dice_3d.begin(_final_face, _power, tool_id)
+			var toss_details: Dictionary = _result.get("details", {})
+			_final_face = int(toss_details.get("face", _result.get("steps", 1)))
+			if tool_id == &"CHINCHIRO" and toss_details.has("dice"):
+				# 친치로 (1.3.1 리워크): 엔진이 정한 사기 주사위 3개의 눈과 쇼벤(그릇 밖으로 나가는 주사위)을 그대로 보여 준다
+				var thrown: Array[int] = []
+				for value: Variant in toss_details["dice"]:
+					thrown.append(int(value))
+				_dice_3d.begin_chinchiro(thrown, int(toss_details.get("out_index", -1)), _power)
+			else:
+				_dice_3d.begin(_final_face, _power, tool_id)
 			_die_label = _label("", RESULT_STAMP_PX, Color("ffe066"))
 			_outline(_die_label, 16)
 			_die_label.modulate.a = 0.0  # 뜸 들이는 동안 숨겨 두고 끝날 때(잔상 시작) 쾅 찍는다
@@ -1498,8 +1506,13 @@ func _update_3d_die(t: float) -> void:
 		_settled = true
 		var steps: int = int(_result.get("steps", _final_face))
 		last_display = str(steps)
-		var oops: bool = bool((_result.get("details", {}) as Dictionary).get("oops", false))
-		_die_label.text = "삐끗! 이번 이동 0칸" if oops else "%d칸 전진!" % steps
+		var toss_details: Dictionary = _result.get("details", {})
+		var oops: bool = bool(toss_details.get("shoben", false))
+		if _mode == &"CHINCHIRO" and toss_details.has("hand"):
+			# 족보 이름과 칸 (쇼벤은 0칸 · 턴 종료)
+			_die_label.text = ToolChinchiro.hand_name(toss_details) + ("" if oops else " · %d칸 전진!" % steps)
+		else:
+			_die_label.text = "%d칸 전진!" % steps
 		if oops:
 			_die_label.add_theme_color_override("font_color", Color("ff8787"))
 

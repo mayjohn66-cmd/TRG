@@ -152,26 +152,64 @@ func test_revolver_first_chamber_bullet_and_cap_at_fifteen() -> void:
 		check(result.steps <= 15, "15칸 초과 불가")
 
 
-func test_chinchiro_rolls_high_with_a_one_in_six_oops_that_moves_zero() -> void:
+## 1.3.1 리워크 (기획서 GDD 4.2 · 예외 규칙 1.8 · HANDOFF-010): 카이지 4·5·6 사기 주사위 3개 + 1/6 쇼벤.
+func test_chinchiro_kaiji_three_dice_hands_and_one_in_six_shoben() -> void:
 	var tool := ToolChinchiro.new()
-	check_eq(ToolChinchiro.FACES, int_array([4, 4, 5, 5, 6, -6]), "판정 배열 (-6은 물리 주사위의 삐끗 면)")
+	check_eq(ToolChinchiro.FACES, int_array([4, 4, 5, 5, 6, 6]), "사기 주사위 면: 4·4·5·5·6·6")
 	var rng: RandomNumberGenerator = _rng()
-	var counts: Dictionary = {}
-	for i: int in 6000:
+	var hands: Dictionary = {}
+	var shoben: int = 0
+	var total: int = 27000
+	for i: int in total:
 		var result: RollResult = tool.roll(rng)
-		counts[result.steps] = int(counts.get(result.steps, 0)) + 1
-		check_eq(result.details["oops"], result.steps == 0, "삐끗 표시")
-		check(not result.reroll and not result.ends_turn and not result.can_continue, "단순 1회 판정")
-	check(counts.keys().all(func(face: int) -> bool: return [0, 4, 5, 6].has(face)), "나올 수 있는 눈금은 0·4·5·6뿐 (후퇴 없음)")
-	check(counts[0] > 800 and counts[0] < 1200, "삐끗(0칸)은 약 1/6 (%d)" % counts[0])
-	check(counts[4] > 1800 and counts[5] > 1800, "4·5는 각 약 1/3")
+		var details: Dictionary = result.details
+		var dice: Array = details["dice"]
+		check(dice.size() == 3 and dice.all(func(value: int) -> bool: return [4, 5, 6].has(value)), "주사위 3개, 눈은 4·5·6뿐")
+		if details["shoben"]:
+			shoben += 1
+			check(result.steps == 0 and result.ends_turn and not result.reroll and details["hand"] == ToolChinchiro.HAND_SHOBEN, "쇼벤 = 0칸 + 턴 종료")
+			check(int(details["out_index"]) >= 0 and int(details["out_index"]) <= 2, "그릇 밖으로 나간 주사위 번호")
+			continue
+		check(not result.ends_turn and not result.can_continue and int(details["out_index"]) == -1, "쇼벤이 아니면 턴이 이어진다")
+		var typed: Array[int] = []
+		typed.assign(dice)
+		check_eq(result.steps, ToolChinchiro.steps_of(typed), "족보 칸 수")
+		check_eq(result.reroll, details["hand"] == ToolChinchiro.HAND_STORM_SIX, "★666만 한 번 더")
+		var key: String = "%s%d" % [details["hand"], int(details["eye"])]
+		hands[key] = int(hands.get(key, 0)) + 1
+	var rolled: int = total - shoben
+	check(abs(shoben - total / 6) < total / 6 * 0.08, "쇼벤 약 1/6 (%d / %d)" % [shoben, total])
+	for key: String in ["eye4", "eye5", "eye6", "shigoro0"]:
+		check(absf(float(hands.get(key, 0)) / rolled - 6.0 / 27.0) < 0.02, "%s 약 6/27 (%d)" % [key, int(hands.get(key, 0))])
+	check(absf(float(hands.get("storm0", 0)) / rolled - 2.0 / 27.0) < 0.012, "아라시 444·555 약 2/27")
+	check(absf(float(hands.get("storm_six0", 0)) / rolled - 1.0 / 27.0) < 0.008, "★666 약 1/27")
+
+
+func test_chinchiro_hand_table_for_all_27_throws() -> void:
+	for a: int in [4, 5, 6]:
+		for b: int in [4, 5, 6]:
+			for c: int in [4, 5, 6]:
+				var dice: Array[int] = [a, b, c]
+				var hand: StringName = ToolChinchiro.hand_of(dice)
+				var steps: int = ToolChinchiro.steps_of(dice)
+				if a == b and b == c:
+					check_eq(hand, ToolChinchiro.HAND_STORM_SIX if a == 6 else ToolChinchiro.HAND_STORM, "트리플은 아라시")
+					check_eq(steps, 12 if a == 6 else 10, "아라시 칸")
+				elif a != b and b != c and a != c:
+					check_eq(hand, ToolChinchiro.HAND_SHIGORO, "4·5·6은 시고로")
+					check_eq(steps, 8, "시고로 8칸")
+				else:
+					var odd: int = a if b == c else (b if a == c else c)
+					check_eq(hand, ToolChinchiro.HAND_EYE, "페어 + 하나는 눈")
+					check_eq(steps, odd, "나머지 눈만큼 (%d%d%d)" % [a, b, c])
+				check(steps >= 4, "메나시(족보 없음)는 없다")
 
 
 func test_oops_roll_leaves_the_pawn_where_it_stands() -> void:
 	var state := make_state(2, 1)
 	place(state, 11, 10, [9])
 	var report: MoveReport = move(state, 11, 0)
-	check_eq(state.get_pawn(11).current_tile_idx, 10, "삐끗은 0칸이라 제자리")
+	check_eq(state.get_pawn(11).current_tile_idx, 10, "쇼벤은 0칸이라 제자리")
 	check(report.path.is_empty(), "걸음 없음")
 
 

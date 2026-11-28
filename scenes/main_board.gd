@@ -7541,7 +7541,7 @@ const TOOL_CARDS: Dictionary = {
 	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모는 쌓고 계속 던짐 (최대 3번)"],
 	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "룰렛을 돌려 전진한다", "7 당첨 재굴림 +1"],
 	&"HOLDEM": ["♠", Color("343a40"), "카드 5장을 받고 한 번 교환한 족보만큼 전진한다", ""],
-	&"CHINCHIRO": ["친", Color("0b7285"), "주사위를 굴려 전진한다", ""],
+	&"CHINCHIRO": ["친", Color("0b7285"), "사기 주사위 3개를 굴려 족보만큼 전진한다", "★666 아라시 12칸+한 번 더"],
 	&"SLOT_777": ["7", Color("862e9c"), "슬롯을 돌려 전진한다", "777 잭팟 20칸"],
 	&"REVOLVER": ["탄", Color("495057"), "방아쇠를 당긴 만큼 전진한다", "폭죽 발사 → 0칸·턴 종료"],
 	&"DICE_HWATU": ["화", Color("c92a2a"), "화투패 족보만큼 전진한다", ""],
@@ -7567,7 +7567,7 @@ const TOOL_RULES: Dictionary = {
 	&"YUT": {"rows": [["낙 (판 밖으로)", "0칸 · 턴 종료 (쌓인 윷도 사라짐)"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 쌓고 한 번 더!"], ["모 (5)", "5칸 쌓고 한 번 더!"]], "note": "윷·모는 쌓아 두고 계속 던진 뒤 눈금마다 말을 골라 이동"},
 	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 균등 · 원판 돌리기"},
 	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 받기 → 바꿀 카드를 골라 한 번 교환 · 플러시 이상 15칸"},
-	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "이번 이동 0칸 (1/6)"]], "note": "접시 밖 이탈 = 삐끗 (후퇴는 없음)"},
+	&"CHINCHIRO": {"rows": [["쇼벤! (낙)", "0칸 · 턴 종료 (1/6)"], ["4 · 5 · 6의 눈", "4 · 5 · 6칸"], ["시고로 4·5·6", "8칸"], ["아라시 444 · 555", "10칸"], ["★666 아라시", "12칸 + 한 번 더!"]], "note": "주사위 면은 4·4·5·5·6·6 (카이지 사기 주사위) · 그릇 밖 = 쇼벤"},
 	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개 · 그림 6종"},
 	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"]], "note": "월 합 끝자리 (망통 = 끝자리 0)"},
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
@@ -13182,7 +13182,10 @@ func _roll_text(data: Dictionary) -> String:
 				symbols.append(SLOT_SYMBOLS[reel])
 			text += "%s → %d칸" % [" | ".join(symbols), result["steps"]]
 		&"CHINCHIRO":
-			text += "%d칸" % result["steps"] if not details["oops"] else "삐끗! 주사위가 접시 밖으로 (이번 이동 0칸)"
+			var thrown: PackedStringArray = []
+			for value: Variant in details.get("dice", []):
+				thrown.append(str(value))
+			text += "%s → %s" % [" · ".join(thrown), ToolChinchiro.hand_name(details)] + (" (0칸, 턴 종료)" if bool(details.get("shoben", false)) else " %d칸" % result["steps"])
 		&"DICE_HWATU":
 			var shown_names: Array[String] = []
 			for card_number: Variant in details.get("new_cards", []):
@@ -14091,7 +14094,7 @@ func _reveal_roll(data: Dictionary) -> void:
 	var roller: int = int(data["player_id"])
 	var roll_steps: int = int((data["result"] as Dictionary).get("steps", 0))
 	var roll_tool: StringName = (data["result"] as Dictionary).get("tool_id", &"")
-	if bool(details.get("oops", false)):
+	if bool(details.get("shoben", false)):
 		_profile_react(roller, false)
 	elif (roll_tool == &"SLOT_777" and roll_steps >= 20) or (roll_tool == &"DICE_MAHJONG" and roll_steps >= 12) or (roll_tool == &"HOLDEM" and roll_steps >= 15):
 		_profile_react(roller, true)
@@ -14113,8 +14116,8 @@ func _reveal_roll(data: Dictionary) -> void:
 		return
 	if bool((data["result"] as Dictionary).get("can_continue", false)):
 		return  # 이어지는 굴림(러시안 룰렛 생존 등)은 패드가 누적을 보여 준다: 이동 칸수는 최종 결과가 나온 뒤 한 번만 띄운다
-	if bool(details.get("oops", false)):
-		_announce("지하노역장 친치로", "이동 실패!", "", Color("ff6b6b"), null, 1.0, true, {"key": "move_failed", "sub": "삐끗!"})
+	if bool(details.get("shoben", false)):
+		_announce_move_failed("쇼벤! (낙)", roller)  # 친치로: 주사위 하나가 그릇 밖으로 → 0칸 · 턴 종료 (기획서 PRESENTATION 2.1)
 		return
 	if bool((data["result"] as Dictionary).get("ends_turn", false)):
 		# 이동 없이 턴이 끝나는 굴림(러시안 룰렛 실탄·화투 망통): 결과 알림과 피격 반응을 충분히 보여 준 뒤에야 다음 차례로 넘어간다.
