@@ -2300,7 +2300,17 @@ const PAWN_LINES: Dictionary = {
 static func _pawn_texture(sub: Variant, kind: GameEnums.PawnKind) -> Texture2D:
 	var root: String = PawnArt.ROOT
 	var key: String = GameEnums.PawnSubType.keys()[int(sub)]
-	var paths: Array[String] = [root + key + ".png"]
+	# Evolution details and family summaries follow the same versioned/table
+	# artwork selection as draft cards, rather than preferring legacy pawn PNGs.
+	var paths: Array[String] = []
+	for definition: AugmentDef in AugmentRegistry.all():
+		if definition.category != GameEnums.AugmentCategory.PAWN_EVOLUTION or definition.payload != kind or definition.units.is_empty():
+			continue
+		if PawnCatalog.sub_type_of(kind, definition.units[0]) == int(sub):
+			paths.assign(AugmentArt.candidates(definition))
+			break
+	# Promoted-only pieces (e.g. chess queen) have no draft definition.
+	paths.append(root + key + ".png")
 	if kind == GameEnums.PawnKind.YUT:
 		paths.append(root + "YUT.png")
 	paths.append(root + str(AugmentArt.PAWN_FILES.get(kind, "PAWN_DEFAULT")) + ".png")

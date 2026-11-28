@@ -104,6 +104,15 @@ func run() -> void:
 			if texture == null: texture = Rulebook.VISUALS.texture(item["art"])
 			defense_sources[(texture.atlas if texture is AtlasTexture else texture).resource_path] = true
 	check(defense_sources.size() == 5, "Defense overview and its four types have distinguishable illustrations")
+	for chapter: int in [5,6,8,9,10]:
+		for entry: Dictionary in art_book._chapter(chapter)["entries"]:
+			if not entry.has("augment"): continue
+			var definition: AugmentDef = AugmentRegistry.get_def(StringName(entry["augment"]))
+			if definition == null: continue
+			var expected: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
+			var detail: Texture2D = entry.get("texture")
+			if detail is AtlasTexture: detail = detail.atlas
+			check(detail == expected, "Detail uses the draft artwork, including versioned/table overrides: %s" % entry["augment"])
 	art_book.free()
 	var parent := Control.new()
 	parent.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
