@@ -213,7 +213,7 @@
 | **보드 표기 (`SHOP_KINDS[&"spirit"]`)** | `law_tag`: **`[기운 목표]`** · `visit_stamp`: **`정령의 기운 모음! (%d/%d)`** *(KO/EN/JA 동시 반영)* |
 | **승리 문구 (`win_reason`)** | **`정령들아, 나에게 힘을 조금만 나눠줘! — 특대 정령 원기옥 완성!`** |
 | **만화 타이틀 (`result_phrase` / `theme`)** | `headline`: **`SPIRIT BOMB!`** · `lines`: **`SPIRIT\nBOMB!`** · `font`: `bungee` · `ink`: `#0b2533` · `accent`: `#2cc7c2` · `tilt`: `-0.055` · `paper`: `#e3f6f7` · `comic_title`: `upper #aef5ff / lower #ffffff / shadow #126b7a` · `geometry_key`: **`LAW_02:S`** *(윤곽 데이터 `SPIRIT\nBOMB!`로 재생성 필수)* |
-| **전용 아이콘 (`icon`)** | `assets/ui/illustrations/laws/LAW_02_SPIRIT_BOMB.png` (`≤ 512×512`, 텍스트 없음 — 정령산 밤하늘 위 청록·하늘빛 거대 원기옥 구체로 불·물·땅·바람 4색 정령 빛방울이 모여드는 구도) |
+| **전용 아이콘 (`icon`)** | `content_trickcal/illustrations/laws/LAW_02_SPIRIT_BOMB_V02.png` (런타임 `512×512`, 텍스트 없음 — 청록·백색 원기옥 아래에서 주황·노랑 분출 폭발이 솟구치는 구도). 확정된 폭발 컷신과 주제를 맞추고 짙은 남색 바탕·공통 원형 테두리·`AugmentArt.SOFT_TONE`을 사용한다. 이전 아이콘 원본은 보존한다. |
 
 #### B. 전용 도입 무대 연출 시퀀스 (`scenes/spirit_bomb_stage.gd`, `LawVictoryPrelude.STAGES[&"spirit_bomb"]`)
 
@@ -234,6 +234,9 @@
 
 ![정령산 정령 원기옥 승리 컷신 연출 타임라인 예시](visual/spec_media/spirit_bomb_victory_v02.webp)
 *▲ 실제 게임 수정본: 6묶음 응집 → 수직 투하 → 대형 분출 폭발 → 폭발 마지막 장면 그대로 팝아트 전환 → 승리 타이틀·캐릭터.*
+
+![정령 원기옥 V02 증강 아이콘 실제 카드 비교](visual/spec_media/spirit_bomb_augment_cards_v02.png)
+*▲ 다이스 소울·정령 원기옥·잭팟의 실제 증강 카드 비교. 선택지·도감·법전이 같은 보드별 아이콘 경로를 사용한다.*
 
 ---
 
