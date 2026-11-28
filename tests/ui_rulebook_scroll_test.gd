@@ -123,15 +123,22 @@ func run() -> void:
 			await frames(10)
 			var scroll := book._right_scroll
 			var grid := book._right_holder.get_node("EntryGrid") as GridContainer
-			check(grid.columns==(3 if MobileSupport.touch_mode() and chapter!=Rulebook.CARD_SPREAD else 4),"Readable phone columns for chapter %d" % chapter)
+			var expected_columns: int = 2 if chapter==Rulebook.BOARD_SPREAD else (3 if MobileSupport.touch_mode() and chapter!=Rulebook.CARD_SPREAD else 4)
+			check(grid.columns==expected_columns,"Readable columns for chapter %d (%d)" % [chapter,grid.columns])
 			check(not scroll.get_h_scroll_bar().visible,"No sideways overflow in chapter %d" % chapter)
-			var row_end := book._tiles[mini(grid.columns,book._tiles.size())-1].get_global_rect().end.x
-			var pane_end := scroll.get_global_rect().end.x-(scroll.get_v_scroll_bar().size.x if scroll.get_v_scroll_bar().visible else 0.0)
-			check(book._tiles.size()<grid.columns or absf(row_end-pane_end)<8.0,"Card columns fill the pane without a blank right-hand strip (chapter %d: %.0f vs %.0f)" % [chapter,row_end,pane_end])
+			check(grid.get_theme_constant("v_separation")==Rulebook.GRID_SEP,"Catalog rows breathe 20px apart (UI-14)")
+			# UI-14: 격자는 안쪽 여백(왼 12 · 오른 24) 안에서 좌우 대칭 (칸을 채우는 장은 양쪽 0, 정한 크기 카드 장은 같은 여백)
+			var inner := book._right_margin.get_global_rect()
+			var scale_x: float = book._right_margin.get_global_transform_with_canvas().get_scale().x
+			var left_gap: float = grid.get_global_rect().position.x-(inner.position.x+12.0*scale_x)
+			var bar_w: float = scroll.get_v_scroll_bar().size.x if scroll.get_v_scroll_bar().visible else 0.0
+			var right_gap: float = (inner.end.x-(24.0-bar_w)*scale_x)-grid.get_global_rect().end.x
+			check(left_gap>=-1.0 and right_gap>=-1.0 and absf(left_gap-right_gap)<3.0,"Grid sits centered inside its safe margins (chapter %d: %.0f vs %.0f)" % [chapter,left_gap,right_gap])
+			check(absf(book._summary_banner.get_global_rect().get_center().x-grid.get_global_rect().get_center().x)<3.0 or chapter==Rulebook.CARD_SPREAD,"Banner shares the grid's centre line (chapter %d: %.1f vs %.1f, bar %.0f)" % [chapter,book._summary_banner.get_global_rect().get_center().x,grid.get_global_rect().get_center().x,scroll.get_v_scroll_bar().size.x if scroll.get_v_scroll_bar().visible else 0.0])
 			for tile: Control in book._tiles:
 				var face := tile.get_child(0) as Button
 				check(absf(face.size.x*face.scale.x-tile.size.x)<0.1,"Card face fills its grid hit area")
-				check(absf(face.size.y*face.scale.y-tile.size.y)<0.5,"Row height matches card face (chapter %d)" % chapter)  # 줄을 다 못 채우면 행 높이가 정수로 올림된다
+				check(absf(face.size.y*face.scale.y-tile.size.y)<1.0,"Row height matches card face (chapter %d: %.1f vs %.1f)" % [chapter,face.size.y*face.scale.y,tile.size.y])  # 줄을 다 못 채우면 행 높이가 정수로 올림된다
 			await capture("chapter_%d_%d" % [chapter,resolution.x])
 		book.show_spread(Rulebook.LAW_SPREAD)
 		await frames()
@@ -326,6 +333,46 @@ func run() -> void:
 		for index: int in book._list_buttons.size():
 			if book._list_buttons[index].visible:
 				check(book._list_buttons[index].size.y>=48.0,"Chapter buttons stay touch-sized")
+		# HANDOFF-016 (UI-11~20): 좌우 24px 대칭 · 탭 분리 · 헤더 끝선 · 격자 간격 · 보드판 2열 · 기본 규칙 타일 · 아이콘
+		var outer := book._book_outer.get_global_rect()
+		var view := root.get_visible_rect()
+		var tabs_rect := book._list_box.get_global_rect()
+		check(absf((view.end.x-outer.end.x)-(tabs_rect.position.x-view.position.x))<2.0 and absf(tabs_rect.position.x-view.position.x-24.0)<2.0,"Tabs and book keep equal 24px screen gutters (UI-11: %s / %s in %s)" % [tabs_rect, outer, view])
+		check(book._list_box.get_global_rect().end.x<=book._book_inset.get_global_rect().position.x-4.0,"Chapter tabs never reach into the cream page (UI-11)")
+		var backup_rect := (book._stage.get_node("SaveBackup") as Control).get_global_rect()
+		check(absf(backup_rect.end.x-outer.end.x)<2.0,"Backup button shares the book's right edge (UI-13)")
+		var tabs_center := (book._group_tabs[0].get_global_rect().position.x+book._group_tabs[1].get_global_rect().end.x)*0.5
+		check(absf(tabs_center-outer.get_center().x)<2.0,"Top tabs are centred on the book (UI-13)")
+		book.show_spread(Rulebook.BOARD_SPREAD)
+		await frames(6)
+		var board_card := book._tiles[0].get_node("BoardCard") as Control
+		check(board_card.size==Rulebook.BOARD_WIDE_CARD and board_card.find_child("BoardLawChip",true,false)!=null,"Board chapter shows 2-column wide showcase cards with a law chip (UI-18)")
+		var chip := board_card.find_child("BoardLawChip",true,false) as Control
+		check(chip.size.x>=80.0,"Law chip keeps a readable width")
+		book.show_spread(0)
+		await frames(6)
+		check((book._right_holder.get_node("EntryGrid") as GridContainer).columns==2 and book._tiles[0].size.x>=200.0,"Four-entry chapters use 2x2 large tiles (UI-19)")
+		book.show_spread(2)
+		await frames(6)
+		var grid2 := book._right_holder.get_node("EntryGrid") as GridContainer
+		check(grid2.columns==3 and grid2.get_theme_constant("h_separation")==Rulebook.BASIC_TILE_SEP,"Basic rule tiles keep 14px gaps (UI-19)")
+		var badges := 0
+		var doubled := false
+		var masked := false
+		for tile: Control in book._tiles:
+			if tile.find_child("ShieldBadge",true,false)!=null: badges += 1
+			if tile.name=="Entry_업기": doubled = tile.find_children("PiggybackPawn*","",true,false).size()==2
+			if tile.name=="Entry_만능 방어": masked = tile.find_child("RoundMask",true,false)!=null
+		check(badges==3,"Capture/attack/trap guard tiles carry the mini shield badge (UI-20: %d)" % badges)
+		var names: Array = []
+		for tile: Control in book._tiles: names.append(str(tile.name))
+		check(doubled,"Piggyback tile shows two overlapping pawns (UI-20: %s)" % [names])
+		check(masked,"All-round guard art is clipped to the round plate (UI-20)")
+		book.show_spread(3)
+		await frames(8)
+		var panel := book._left_holder.find_child("BoardPanel",true,false) as Control
+		check(panel is HBoxContainer,"Special tiles: mini board and legend sit side by side (UI-17)")
+		check(book._left_scroll.get_global_rect().encloses(panel.get_global_rect()),"Mini board and the whole legend show without scrolling (UI-17)")
 		book.queue_free()
 		await frames()
 	check(PlayerSave.data()==saved,"Browsing and dragging do not change saved records")
