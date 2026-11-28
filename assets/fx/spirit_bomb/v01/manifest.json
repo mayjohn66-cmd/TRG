@@ -1,0 +1,14 @@
+{
+  "generator": "native image_gen",
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-42316d11-dfeb-4096-8f42-04ae46e1aa0a.png",
+  "prompt": "Transparent background game VFX sprite, single isolated giant spirit energy sphere for a cute Korean chibi fantasy board game victory animation. Hand-painted 2D anime energy, brilliant white luminous core transitioning to pale sky cyan, turbulent turquoise rim with irregular wispy flame filaments and flowing brush strokes. Roughly circular overall silhouette but no perfect hard circular outlines, no concentric rings, no target pattern, no shiny glass marble, no object reflections. Dense radiant energy with visible cyan flowing wisps at the edges, clear readable small-scale shape, restrained soft glow fades into full transparency. Centered with generous transparent padding; no ground, no scenery, no characters, no words, no interface. One sphere only, facing camera, square sprite. Painterly polished game illustration rather than 3D rendering.",
+  "runtime": {
+    "size_limit": 512,
+    "mipmaps": true,
+    "lossy_quality": 0.85
+  },
+  "purpose": "Spirit Mountain LAW_02 seekable victory energy sphere; original timings preserved",
+  "source_sha256": "dd738af16937649c9926134a5bee622303f5394a1c03d7780873725afdd9dbc8",
+  "runtime_bytes": 135110,
+  "validation": "test_spirit_mountain: 140 assertions; test_special_victory: 113 assertions; native 240-frame capture, snapshot and RNG unchanged"
+}

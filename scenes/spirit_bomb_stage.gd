@@ -3,6 +3,8 @@
 ## bad_carrot_stage·monatium_cash_stage와 같은 결정론적 Seekable 2D 무대: setup + seek(time, view) + _draw (Timer·_process·randf 없음).
 extends Control
 
+const ORB_ART: Texture2D = preload("res://assets/fx/spirit_bomb/v01/energy_orb.png")
+
 const COUNT := 6
 const GATHER_START := 0.22
 const GATHER_INTERVAL := 0.23
@@ -100,6 +102,8 @@ func orb_center() -> Vector2:
 	var ratio := _ratio()
 	var target := _target()
 	var hover := target - Vector2(0.0, HOVER) * ratio
+	# Keep the painted wisps inside the viewport even on a high board focus.
+	hover.y = maxf(hover.y, orb_radius(_time) * 1.4 * ratio + 20.0 * ratio)
 	var center := hover.lerp(target, drop_progress(_time))
 	if _time >= merged_end() and _time < DROP_START_AT:
 		# 임계 팽창: 미세 진동 (시각만으로 정해진다)
@@ -129,11 +133,11 @@ func _draw() -> void:
 	for index: int in COUNT:
 		_draw_bundle(index, center, ratio, handoff)
 	if impact <= 0.0:
+		if _time >= DROP_START_AT:
+			_draw_tail(center, radius, ratio, handoff)
 		_draw_orb(center, radius, ratio, handoff)
 		if _time >= merged_end():
 			_draw_arcs(center, radius, ratio, handoff)
-		if _time >= DROP_START_AT:
-			_draw_tail(center, radius, ratio, handoff)
 	else:
 		_draw_impact(target, impact, ratio, handoff)
 
@@ -153,14 +157,10 @@ func _draw_bundle(index: int, center: Vector2, ratio: float, alpha: float) -> vo
 		var at := _bezier(source, control, center, eased)
 		var fade := (1.0 - trail / 6.0) * alpha * smoothstep(0.0, 0.12, t)
 		var size_px := (15.0 - trail * 1.9) * ratio
-		draw_circle(at, size_px * 1.9, Color(color, 0.22 * fade))
-		draw_circle(at, size_px, Color(color.lightened(0.25), 0.9 * fade))
+		var next := _bezier(source, control, center, minf(eased + 0.015, 1.0))
+		PaintedFx.stamp(self, PaintedFx.IMPACT, at, Vector2(size_px * 4.6, size_px * 2.4), Color(color.lightened(0.3), fade * 0.75), at.angle_to_point(next))
 		if trail == 0:
-			draw_circle(at, size_px * 0.45, Color(1, 1, 1, 0.95 * fade))
-			# 같은 묶음의 작은 방울 둘
-			for twin: int in 2:
-				var side := Vector2(cos(index * 1.7 + twin * 2.4), sin(index * 1.7 + twin * 2.4)) * 15.0 * ratio
-				draw_circle(at + side, 5.0 * ratio, Color(color.lightened(0.35), 0.8 * fade))
+			PaintedFx.stamp(self, PaintedFx.FLECK, at, Vector2.ONE * 30.0 * ratio, Color(1, 1, 1, fade))
 
 
 static func _bezier(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
@@ -170,20 +170,12 @@ static func _bezier(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
 func _draw_orb(center: Vector2, radius: float, ratio: float, alpha: float) -> void:
 	var charged := smoothstep(merged_end(), DROP_START_AT, _time)
 	var pulse := 1.0 + sin(_time * 22.0) * 0.035 * charged
-	# 바깥 오라 (청록) → 안쪽 오라 (하늘) → 핵 (흰색)
-	for ring: int in 6:
-		var spread := 1.0 + 0.10 * (ring + 1) * (1.0 + charged)
-		draw_circle(center, radius * spread * pulse, Color(AURA_OUTER, (0.10 + 0.05 * charged) * alpha))
-	draw_circle(center, radius * pulse, Color(AURA_OUTER.lightened(0.1), 0.85 * alpha))
-	draw_circle(center, radius * 0.82 * pulse, Color(AURA_INNER, 0.92 * alpha))
-	draw_circle(center, radius * 0.55, Color(0.93, 1.0, 1.0, 0.96 * alpha))
-	draw_circle(center - Vector2(radius * 0.28, radius * 0.30), radius * 0.18, Color(1, 1, 1, 0.85 * alpha))
-	# 합류한 원소 빛이 구체 안을 돈다
-	var count := merged(_time)
-	for index: int in count:
+	# One painted turbulent silhouette replaces stacked geometric discs.
+	PaintedFx.stamp(self, ORB_ART, center, Vector2.ONE * radius * 2.8 * pulse, Color(1, 1, 1, alpha), sin(_time * 2.0) * 0.035)
+	for index: int in merged(_time):
 		var angle := _time * 3.2 + index * TAU / COUNT
-		var at := center + Vector2(cos(angle), sin(angle)) * radius * 0.62
-		draw_circle(at, maxf(radius * 0.09, 3.0 * ratio), Color(ELEMENTS[index % ELEMENTS.size()], 0.75 * alpha))
+		var at := center + Vector2(cos(angle), sin(angle)) * radius * 0.70
+		PaintedFx.stamp(self, PaintedFx.IMPACT, at, Vector2(0.42, 0.14) * radius, Color(ELEMENTS[index % ELEMENTS.size()], 0.55 * alpha), angle + PI * 0.5)
 
 
 func _draw_arcs(center: Vector2, radius: float, ratio: float, alpha: float) -> void:
@@ -202,8 +194,9 @@ func _draw_tail(center: Vector2, radius: float, ratio: float, alpha: float) -> v
 	for echo: int in range(1, 5):
 		var past := maxf(_time - echo * 0.035, DROP_START_AT)
 		var hover := _target() - Vector2(0.0, HOVER) * ratio
+		hover.y = maxf(hover.y, orb_radius(_time) * 1.4 * ratio + 20.0 * ratio)
 		var at := hover.lerp(_target(), drop_progress(past))
-		draw_circle(at, radius * (1.0 - echo * 0.08), Color(AURA_OUTER, 0.16 * (1.0 - echo / 5.0) * alpha))
+		PaintedFx.stamp(self, ORB_ART, at, Vector2.ONE * radius * 2.8 * (1.0 - echo * 0.08), Color(AURA_OUTER, 0.13 * (1.0 - echo / 5.0) * alpha))
 
 
 func _draw_impact(target: Vector2, impact: float, ratio: float, alpha: float) -> void:
@@ -211,19 +204,19 @@ func _draw_impact(target: Vector2, impact: float, ratio: float, alpha: float) ->
 	var t := clampf(impact / span, 0.0, 1.0)
 	var flash := 1.0 - smoothstep(0.0, 0.16, impact)
 	# 섬광: 백색 핵이 번쩍 터지고 (짧게), 시안 빛이 퍼지며 사라진다 + 시안 링
-	for glow: int in 4:
-		draw_circle(target, RADII[COUNT - 1] * (1.0 + 0.35 * glow + 0.8 * t) * ratio, Color(AURA_INNER, 0.20 * flash * alpha))
-	draw_circle(target, RADII[COUNT - 1] * (1.0 - 0.5 * t) * ratio, Color(1, 1, 1, 0.92 * flash * alpha))
-	draw_arc(target, (150.0 + 520.0 * t) * ratio, 0.0, TAU, 72, Color(AURA_INNER, (1.0 - t) * 0.95 * alpha), (16.0 * (1.0 - t) + 2.0) * ratio, true)
-	draw_arc(target, (90.0 + 340.0 * t) * ratio, 0.0, TAU, 72, Color(AURA_OUTER, (1.0 - t) * 0.8 * alpha), (10.0 * (1.0 - t) + 2.0) * ratio, true)
-	PaintedFx.stamp(self, PaintedFx.RIPPLE, target, Vector2(760.0, 300.0) * (0.4 + t) * ratio, Color(AURA_INNER, (1.0 - t) * 0.7 * alpha))
+	PaintedFx.stamp(self, ORB_ART, target, Vector2.ONE * (340.0 + 600.0 * t) * ratio, Color(1, 1, 1, flash * alpha))
+	for ray: int in 8:
+		var angle := ray * TAU / 8.0 + 0.12 * sin(ray * 2.1)
+		var direction := Vector2(cos(angle), sin(angle))
+		PaintedFx.streak(self, target, target + direction * (190.0 + 420.0 * t) * ratio, (100.0 - 65.0 * t) * ratio, Color(AURA_INNER, (1.0 - t) * 0.8 * alpha))
+	PaintedFx.stamp(self, PaintedFx.RIPPLE, target, Vector2(760.0, 300.0) * (0.4 + t) * ratio, Color(AURA_INNER, (1.0 - t) * 0.85 * alpha))
 	# 4원소 불티: 정해진 각도로 방사 (시각만으로 정해진다)
 	for spark: int in SPARKS:
 		var angle := spark * TAU / SPARKS + 0.13 * sin(spark * 2.3)
 		var reach := (120.0 + 430.0 * (0.6 + 0.4 * absf(sin(spark * 1.7)))) * (1.0 - pow(1.0 - t, 2.2)) * ratio
 		var at := target + Vector2(cos(angle), sin(angle) * 0.62) * reach + Vector2(0.0, 90.0 * t * t) * ratio
 		var color: Color = ELEMENTS[spark % ELEMENTS.size()]
-		draw_circle(at, (7.0 * (1.0 - t) + 2.0) * ratio, Color(color.lightened(0.2), (1.0 - t) * alpha))
+		PaintedFx.stamp(self, PaintedFx.FLECK, at, Vector2.ONE * (26.0 * (1.0 - t) + 6.0) * ratio, Color(color.lightened(0.2), (1.0 - t) * alpha), angle)
 
 
 func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:

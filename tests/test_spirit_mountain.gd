@@ -228,6 +228,11 @@ func test_spirit_bomb_stage_icon_and_cues() -> void:
 	b.seek(0.5, Vector2(1366, 768))
 	b.seek(1.95, Vector2(1366, 768))
 	check(a.orb_center().is_equal_approx(b.orb_center()), "되감아도 같은 위치 (결정론)")
+	for view: Vector2 in [Vector2(1366, 768), Vector2(960, 540)]:
+		a.setup(Vector2(683, 335), Vector2(1366, 768))
+		a.seek(1.84, view)
+		var painted_radius: float = stage_script.orb_radius(1.84) * 1.4 * minf(view.x / 1366.0, view.y / 768.0)
+		check(a.orb_center().y - painted_radius >= 0.0, "최대 응집의 붓결이 화면 위로 잘리지 않는다")
 	a.free()
 	b.free()
 	_restore(saved)
