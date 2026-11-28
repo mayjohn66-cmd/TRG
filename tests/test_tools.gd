@@ -291,3 +291,10 @@ func test_zero_outcome_list_matches_real_rolls() -> void:
 				zero_seen = true
 				break
 		check_eq(zero_seen, ToolRegistry.ZERO_OUTCOME.has(tool_id), "%s: 0칸 결과가 %s" % [tool_id, "있다" if zero_seen else "없다"])
+
+
+## 친치로 굴림 기록 줄이 영어·일본어 화면에 한글을 남기지 않는다 (배포 CI ui_smoke: "ションベン！ (0칸, ターン終了)").
+func test_chinchiro_log_lines_translate_fully() -> void:
+	for line: String in ["5 · 5 · 5 → 쇼벤! (낙) (0칸, 턴 종료)", "6 · 6 · 6 → ★666 아라시! 12칸", "5 · 5 · 5 → 아라시! 10칸", "4 · 5 · 6 → 시고로! 8칸", "6 · 6 · 4 → 4의 눈 4칸"]:
+		for lang: String in ["en", "ja"]:
+			check(not L10n.has_hangul(L10n.translate_text(line, lang)), "%s: %s" % [lang, L10n.translate_text(line, lang)])
