@@ -1108,7 +1108,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동","The pawn that steps on it stops, and every trap within 2 spaces chain-triggers",踏んだ駒は停止し、半径2マス内の罠がすべて連鎖発動
 밟은 적 말 +3칸 미끄러짐 + 카드 1장 강탈,Enemy who steps on it slides +3 spaces + 1 card stolen,踏んだ敵の駒を+3マス滑らせ、カードを1枚強奪
 밟은 적 말 +{p1}칸 미끄러짐 + 카드 1장 강탈,Enemy who steps on it slides +{p1} spaces + 1 card stolen,踏んだ敵の駒を+{p1}マス滑らせ、カードを1枚強奪
-밟은 적 말 ↔ 보드 꼴찌 말 위치 교환,Enemy who steps on it ↔ last pawn on the board swap,踏んだ敵の駒 ↔ ボード上の最下位駒の位置を入れ替え
+밟은 적 말 ↔ 보드 꼴찌 말 위치 교환,Swaps the enemy pawn that stepped here with the last-place pawn on the board.,踏んだ敵の駒 ↔ ボード上の最下位駒の位置を入れ替える
 방 닫고 나가기,Close Room & Leave,部屋を閉じて退出
 방 연결에 실패했습니다. (방장이 게임 중이거나 네트워크가 원활하지 않습니다),Couldn't connect to the room. (Host is in a game or the network is unstable),部屋への接続に失敗しました。(ホストがゲーム中か、ネットワークが不安定です)
 방 코드,Room code,ルームコード
@@ -2332,7 +2332,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 재밌었어요!,It was fun!,楽しかった！
 잘 모르겠어요,Not sure,よく分からなかった
 어떤 부분이 아쉬웠나요? (하나만 골라 주세요),What felt lacking? (pick one),どこが物足りなかったですか？（1つ選んでください）
-[코너·3R·1회] 멈춘 적 말 감금,[Corner·3R·Once] Jail enemy pawns that stop,[コーナー·3R·1回] 止まった敵の駒を監禁
+[코너·3R·1회] 멈춘 적 말 감금,[Corner·3R·Once] Imprisons enemy pawn stopping here.,[コーナー·3R·1回] 止まった敵の駒を監禁
 [코너·3R·1회] 내 말 +5칸 점프 / 적 말 출발선 사출,[Corner·3R·Once] My pawn jumps +5 / enemy pawn to Start,[コーナー·3R·1回] 自分の駒 +5マスジャンプ / 敵の駒はスタートへ射出
 [코너·3R·1회] 내 말 +{p1}칸 점프 / 적 말 출발선 사출,[Corner·3R·Once] My pawn jumps +{p1} / enemy pawn to Start,[コーナー·3R·1回] 自分の駒は+{p1}マスジャンプ / 敵の駒はスタート地点へ射出
 "[코너·3R·1회] 지나가는 적은 카드 1장 상납, 없으면 강제 정지","[Corner·3R·Once] Passing enemies pay 1 card, or are forced to stop",[コーナー·3R·1回] 通過する敵はカード1枚を上納、なければ強制停止
@@ -2855,7 +2855,7 @@ TRPG,TRPG,TRPG
 팽이가 부딪힌 칸에 내 말이 있으면 함께 날아갑니다,Your own pawn on the tile the top hits is blown away too,コマがぶつかったマスに自分の駒がいると一緒に飛ばされます
 밟은 모두 강제 정지,Forces all who step on it to stop,踏んだ全員を強制停止
 잡기 막고 카드 1장,Blocks a capture + 1 card,捕獲を防いでカード1枚
-[잡기 방어] 잡기를 막고 카드 1장 획득,[Capture Guard] Block a capture and gain 1 card,[捕獲ガード] 捕獲を防いでカード1枚を獲得
+[잡기 방어] 잡기를 막고 카드 1장 획득,[Capture Guard] Block a capture and draw 1 card.,[捕獲ガード] 捕獲を防ぎ、カードを1枚獲得する
 펭귄 발사로 적 날리기,Launch a penguin at enemies,ペンギン発射で敵を吹き飛ばす
 [공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림,[Attack] Launch a penguin from one of your pawns · it flies like alkkagi and blasts every enemy pawn it hits back to the start,[攻撃] 自分の駒から ペンギンを発射 · おはじきのように飛んで当たった敵の駒をすべてスタートへ吹き飛ばす
 내 말 박스로 1회 방어,Box defends one of your pawns once,自分の駒を箱で1回防御
@@ -3381,25 +3381,25 @@ TRPG,TRPG,TRPG
 주사위·윷·친치로·야추·핀볼은 버튼을 꾹 눌러 세기를 모아 던져요,"Dice, Yut, Chinchiro, Yacht and Pinball: hold the button to build power, then throw",サイコロ・ユッ・チンチロ・ヨット・ピンボールはボタンを長押しして力をためて投げます
 [버프 발동] 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸,[Buff] This roll +9 · but the first roll of each of your next 3 turns is -3.,[バフ発動] 今回の出目+9・代わりに次の自分の番3回は最初の出目-3
 [기타 발동] 밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능),"[Misc] When your turn comes while Banned, Skipped or Hacked, lift them all (usable even while Banned).",[その他発動] バン・スキップ・ハッキング中に自分の番が来たらすべて解除（バン中でも使用可）
-[버프 발동] 내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음,[Buff] Coat one of your pawns in mercury - blocks being ejected to the start line by an attack card once.,[バフ発動] 自分の駒1つに水銀の盾・攻撃カードでスタートラインへ射出されるのを1回防ぐ
+[버프 발동] 내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음,[Buff] Coat one of your pawns in mercury - blocks one ejection from an attack card.,[バフ発動] 自分の駒1つに水銀の盾・攻撃カードによる射出を1回防ぐ
 [공격 발동] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림,[Attack] Launch a penguin from one of your pawns · it flies like alkkagi and blasts every enemy pawn it hits back to the start,[攻撃発動] 自分の駒から ペンギンを発射 · おはじきのように飛んで当たった敵の駒をすべてスタートへ吹き飛ばす
-[버프 발동] 내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐,"[Buff] Put a delivery box on one of your pawns · blocks one capture or trap, then comes off",[バフ発動] 自分の駒に宅配ボックスをかぶせる · 捕獲・罠を1回防いで外れる
-[공격 발동] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가),[Attack] The target's next turn plays automatically (random pawn move · no cards or skills),[攻撃発動] 対象の次の1ターンが自動進行 (ランダムな駒を移動 · カード・必殺技使用不可)
+[버프 발동] 내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐,"[Buff] Put a delivery box over one of your pawns - it blocks one capture or trap, then comes off.",[バフ発動] 自分の駒1つに宅配ボックスをかぶせる - 捕獲・罠を1回防いで外れる
+[공격 발동] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가),[Attack] The target's next turn plays itself (a random pawn moves; no cards or skills).,[攻撃発動] 対象の次の1ターンが自動進行になる（ランダムな駒が動く・カードとスキル使用不可）
 [공격 발동] 상대 선두 말을 출발선으로 장외 사출,[Attack] Knock a rival's lead pawn back to Start,[攻撃発動] 相手の先頭駒をスタート地点へ場外射出
 [공격 발동] 다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸,[Attack] Pass the bomb to the next player: knock off their lead pawn + my move +4,[攻撃発動] 次のプレイヤーに爆弾パス: 先頭駒を射出 + 自分の移動 +4マス
-[버프 발동] 이번 굴림 +4칸,[Buff] This roll +4 spaces,[バフ発動] 今回の出目 +4マス
+[버프 발동] 이번 굴림 +4칸,[Buff] Add +4 spaces to this roll.,[バフ発動] 今回の出目+4マス
 [공격 발동] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님),[Attack] Reset 1 Special Victory progress counter to 0 (not a defense card).,[攻撃発動] 特殊勝利の記録1つを0に初期化する (防御カードではない)
 [공격 발동] 고른 한 변의 설치물 전부 붕괴,[Attack] Collapse all objects on one chosen side,[攻撃発動] 選んだ一辺の設置物をすべて崩壊させる
 [공격 발동] 내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환,[Attack] Swap my last pawn ↔ the leading enemy pawn,[攻撃発動] 自分の最下位駒 ↔ 1位の敵の先頭駒の位置を入れ替える
 "[공격 발동] 적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출","[Attack] Deathmatch vs 1 rival in 1 of 6 random minigames! Winner +3 spaces, loser's lead pawn knocked off",[攻撃発動] 敵1人と6種のランダムミニゲームでデスマッチ！ 勝者の駒 +3マス、敗者の先頭駒を射出
 [공격 발동] 내 선두 말 앞 3칸의 적 사출 + 설치물 파괴,[Attack] Knock off enemies 3 spaces ahead of my lead + destroy objects,[攻撃発動] 自分の先頭駒の前方3マス以内の敵を射出 + 設置物を破壊
 [버프 발동] 다음 굴림 결과를 1~6칸 중 직접 지정,[Buff] Set your next roll to 1~6 yourself,[バフ発動] 次の出目結果を1~6マスの中から直接指定する
-[버프 발동] 이번 턴이 끝나면 한 턴 더,[Buff] One more turn after this one,[バフ発動] このターンが終わると、もう1ターン
-[버프 발동] 내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동,[Buff] Teleport my lead pawn to an empty tile up to the halfway corner,[バフ発動] 自分の先頭駒を折り返し地点までの空きマスの中から選んだマスへ瞬間移動
+[버프 발동] 이번 턴이 끝나면 한 턴 더,[Buff] Take an extra turn right after this turn ends.,[バフ発動] このターンが終わると、もう1ターン行う
+[버프 발동] 내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동,[Buff] Teleport your lead pawn to any chosen empty tile up to the midpoint.,[バフ発動] 自分の先頭駒を折り返し地点までの空きマスの中から選んだマスへ瞬間移動
 [공격 발동] 상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지,"[Attack] Ban 1 rival's cards, Skills and dice rerolls for 2 turns",[攻撃発動] 相手1人の2ターンの間カード・必殺技・サイコロのリロール禁止
 [공격 발동] 상대 1명의 다음 턴 건너뛰기,[Attack] Skip 1 rival's next turn,[攻撃発動] 相手1人の次のターンをスキップ
-[너프 발동] 적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때),[Nerf] Push 1 enemy pawn back 1 space (the space behind must be empty),[デバフ発動] 敵の駒1個を1マス後ろへ（後ろのマスが空いているとき）
-[버프 발동] 내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때),[Buff] Move 1 of your pawns forward 1 space (the space ahead must be empty),[バフ発動] 自分の駒1個を1マス前へ（前のマスが空いているとき）
+[너프 발동] 적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때),[Nerf] Push 1 enemy pawn back 1 space (destination tile must be empty).,[デバフ発動] 敵の駒1個を1マス後ろへ（移動先のマスが空いている時）
+[버프 발동] 내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때),[Buff] Move 1 of your pawns forward 1 space (destination tile must be empty).,[バフ発動] 自分の駒1個を1マス前へ（移動先のマスが空いている時）
 [너프 발동] 적 1명의 다음 이동 눈금 -1 (최소 1칸),[Nerf] Reduce 1 enemy's next roll by 1 (minimum 1 space),[デバフ発動] 敵1人の次の移動目盛り-1（最小1マス）
 [카드 보급] 발동 카드 패키지,[Card Supply] Action Card Pack,[カード補給] 発動カードパック
 ◆ 무작위 발동 카드 2장 획득,◆ Gain 2 random Action cards,◆ ランダムな発動カードを2枚獲得
@@ -3428,7 +3428,7 @@ TRPG,TRPG,TRPG
 [공격 방어] 공격 카드를 막고 반사,[Attack Guard] Block an attack card and reflect it,[攻撃ガード] 攻撃カードを防いで反射
 [너프 발동] 특수 승리 기록 1개를 0으로 초기화,[Nerf] Reset 1 Special Victory progress counter to 0,[デバフ発動] 特殊勝利の記録1つを0に初期化する
 [너프 발동] 상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지,"[Nerf] Ban 1 opponent from cards, skills and dice rerolls for 2 turns",[デバフ発動] 相手1人を2ターンの間、カード・必殺技・サイコロ振り直し禁止
-[너프 발동] 상대 1명의 다음 턴 건너뛰기,[Nerf] Skip 1 opponent's next turn,[デバフ発動] 相手1人の次のターンをスキップ
+[너프 발동] 상대 1명의 다음 턴 건너뛰기,[Nerf] Skip 1 opponent's next turn.,[デバフ発動] 相手1人の次のターンをスキップする
 차례 빼앗기,Take over turns,手番の乗っ取り
 상대의 다음 차례를 자동으로 진행시켜요,Makes a rival's next turn play itself,相手の次の手番を自動で進めさせます
 카드마다 달라요: 그냥 피하기 · 덤으로 카드 1장 · 맞은 카드를 내 손패로 빼앗기 · 공격자에게 반사,Depends on the card: just dodge · dodge and draw 1 card · take the attack card into your hand · reflect it at the attacker,カードによって違います：かわすだけ・おまけでカード1枚・受けたカードを自分の手札に奪う・攻撃者に反射
@@ -3507,7 +3507,7 @@ TRPG,TRPG,TRPG
 [판정 도구] 도구마다 족보와 조작 손맛이 달라요. 증강의 [도구 교체]로 바꿔 굴려요.,[Judgment Tools] Each tool has its own hands and feel. Swap with the [Tool Swap] augment.,[判定ツール] ツールごとに役と操作の手ごたえが違います。増強の［ツール交換］で持ち替えて振ります。
 [말] 증강의 [기물 진화]로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.,[Pieces] Evolve a basic piece with the [Piece Evolution] augment. Each has a passive and a once-per-game special.,[駒] 増強の［駒進化］で基本の駒を進化させます。駒ごとに常時能力と1回限りの必殺技があります。
 [카드] 상점·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 기본 최대 7장이에요.,[Cards] Drag cards from shops and augments onto the board to use them. Hand limit is 7 by default.,[カード] ショップや増強で手に入れたカードをボードにドラッグして使います。手札は基本最大7枚です。
-"[특수 승리 법전] 8라운드(과열)부터 증강에 등장하며, 제정 시점부터 0에서 경쟁해 조건을 채우면 즉시 다음 순위로 졸업해요!","[Special Victory Laws] Appear in augments from Round 8 (Overheat). Everyone starts from 0 when a law is enacted, and whoever meets it graduates to the next rank at once!",[特殊勝利法典] 8ラウンド（過熱）から増強に登場し、制定時点から0で競い、条件を満たすとすぐ次の順位で卒業します！
+"[특수 승리 법전] 8라운드(과열)부터 증강에 등장하며, 제정 시점부터 0에서 경쟁해 조건을 채우면 즉시 다음 순위로 졸업해요!","[Special Victory Laws] From Round 8 (Overheat). Everyone counts from 0 once enacted; meet it to graduate at once!",[特殊勝利法典] 8ラウンド（過熱）から増強に登場し、制定時点から0で競い、条件を満たすとすぐ次の順位で卒業します！
 [초증강] 14라운드(광기)부터 등장하는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.,"[Super Augments] High risk, high return from Round 14 (Frenzy). A warning mark means your own pieces may be launched too.",[超増強] 14ラウンド（狂気）から登場するハイリスク・ハイリターン。警告マークは自分の駒も射出されうるという意味です。
 법전의 조건을 채우면 차례 정산 때 바로 졸업,Meet a law's condition and graduate at the end-of-turn check,法典の条件を満たせば手番の精算時にすぐ卒業
 "법전 조건은 [b]각 차례가 끝나는 정산 시점(및 라운드 끝 중립 기물 뒤)[/b]에 채워져 있으면 특수 승리! (방해령 허리케인 포스는 내 차례가 끝날 때, 보드연성진은 경보 뒤 다음 내 차례 끝까지 유지)",A law wins if its condition is met [b]at the check after each turn (and after the round-end neutral pieces)[/b]! (Meddling Spirits' Hurricane Force: at the end of your own turn. Board Alchemy Circle: hold it until the end of your next turn after the alarm),法典の条件は[b]各手番の精算時（およびラウンド終了の中立駒の後）[/b]に満たしていれば特殊勝利！（妨害霊ハリケーンフォースは自分の手番の終わり、盤面錬成陣は警報の後、次の自分の手番の終わりまで維持）
@@ -3530,3 +3530,59 @@ TRPG,TRPG,TRPG
 내 차례가 끝날 때 손패에 3종을 모두 들고 있으면 특수 승리!,Hold all three in your hand at the end of your turn for a Special Victory!,自分の手番の終わりに手札に3種すべてを持っていれば特殊勝利！
 각 차례가 끝나는 정산 시점(및 라운드 끝 NPC 뒤)에 조건을 채워 두면 특수 승리!,Meet it at the check after each turn (and after the round-end NPCs) for a Special Victory!,各手番の精算時（およびラウンド終了のNPCの後）に条件を満たしていれば特殊勝利！
 지속/상태,Lasting / Status,持続／状態
+[만능 방어] 공격을 무효화하고 이번 턴을 통째로 되감은 뒤 공격자의 턴 종료,"[All-round Guard] Nullify the attack, rewind this entire turn, and end the attacker's turn.",[オールガード] 攻撃を無効化し、このターンを巻き戻して攻撃者の番を終了させる
+[잡기 방어] 잡기를 막고 공격해 온 적 말을 출발선으로 사출,[Capture Guard] Block a capture and launch the attacking enemy pawn to the start line.,[捕獲ガード] 捕獲を防ぎ、攻撃してきた敵駒をスタート地点へ射出
+[공격 방어] 공격 카드를 막고 반사: 공격자 선두 말을 출발선으로 사출 (해킹은 그대로 반사),[Attack Guard] Block and reflect an attack card: the attacker's lead pawn goes to the start line,[攻撃ガード] 防いで反射: 攻撃者の先頭駒をスタート地点へ射出
+[공격 방어] 공격 카드 효과를 1회 회피 (잡기는 못 막음),[Attack Guard] Evade 1 attack card's effect (cannot stop a capture).,[攻撃ガード] 攻撃カードの効果を1回回避する（捕獲は防げない）
+[함정 방어] 걸린 함정을 파괴하고 내 말 +{p1}칸 전진,[Trap Guard] Destroy the triggered trap and your pawn advances +{p1} spaces.,[罠ガード] 踏んだ罠を破壊し、自分の駒が+{p1}マス前進する
+[함정 방어] 걸린 함정을 파괴하고 내 말 +3칸 전진,[Trap Guard] Destroy the triggered trap and your pawn advances +3 spaces.,[罠ガード] 踏んだ罠を破壊し、自分の駒が+3マス前進する
+[함정 방어] 걸린 함정을 무효화·제거하고 설치자에게서 카드 1장 강탈,[Trap Guard] Nullify and remove the triggered trap and steal 1 card from the trap setter.,[罠ガード] 踏んだ罠を無効化・除去し、設置者からカード1枚強奪
+[함정 방어] 걸린 함정을 발동시키지 않고 제거 · 그 함정 카드를 내 손패로 획득,[Trap Guard] Remove the triggered trap without it going off · take that trap card into your hand.,[罠ガード] 踏んだ罠を発動させず除去し、その罠カードを手札に獲得
+[잡기 방어] 잡기를 1회 회피하고 공격 말과 같은 칸에 함께 선다,[Capture Guard] Evade 1 capture and stand on the same tile as the attacking pawn.,[捕獲ガード] 捕獲を1回回避し、攻撃してきた駒と同じマスに並ぶ
+[공격 발동] 적 선두 말을 출발선으로 사출,[Attack] Eject an enemy's lead pawn to the start line.,[攻撃発動] 敵の先頭駒をスタート地点へ射出する
+[공격 발동] 다음 플레이어의 선두 말을 출발선으로 사출 + 내 선두 말 +{p1}칸 전진,[Attack] Launch the next player's lead pawn to the start line + your lead pawn advances +{p1} spaces.,[攻撃発動] 次の人の先頭駒を射出、自分の先頭駒は+{p1}マス前進
+[공격 발동] 다음 플레이어의 선두 말을 출발선으로 사출 + 내 선두 말 +4칸 전진,[Attack] Launch the next player's lead pawn to the start line + your lead pawn advances +4 spaces.,[攻撃発動] 次の人の先頭駒を射出、自分の先頭駒は+4マス前進
+[버프 발동] 이번 굴림 +{p1}칸,[Buff] Add +{p1} spaces to this roll.,[バフ発動] 今回の出目+{p1}マス
+[너프 발동] 지정한 플레이어의 특수 승리 기록 1개를 0으로 초기화,[Nerf] Reset 1 Special Victory record of the chosen player to 0.,[デバフ発動] 指定した人の特殊勝利の記録1つを0に初期化
+[공격 발동] 고른 한 변의 설치물 전부 파괴,[Attack] Destroy all installations along one chosen side of the board.,[攻撃発動] 選んだ一辺の設置物をすべて破壊する
+[공격 발동] 내 꼴찌 말 ↔ 1등 상대의 선두 말 위치 교환,[Attack] Swap your last pawn with the lead pawn of the top-ranked opponent.,[攻撃発動] 自分の最下位駒 ↔ 1位の相手の先頭駒を入れ替え
+"[공격 발동] 상대 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +{p1}칸 전진, 패자 선두 말을 출발선으로 사출","[Attack] 1v1 random minigame (of 6) vs 1 opponent! Winner's pawn advances +{p1} spaces, loser's lead pawn is ejected to the start line.",[攻撃発動] 相手1人と6種ランダムミニゲームで対決！勝者の駒が+{p1}マス前進、敗者の先頭駒はスタート地点へ射出
+"[공격 발동] 상대 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸 전진, 패자 선두 말을 출발선으로 사출","[Attack] 1v1 random minigame (of 6) vs 1 opponent! Winner's pawn advances +3 spaces, loser's lead pawn is ejected to the start line.",[攻撃発動] 相手1人と6種ランダムミニゲームで対決！勝者の駒が+3マス前進、敗者の先頭駒はスタート地点へ射出
+[공격 발동] 내 선두 말 앞 {p1}칸 안의 적 말을 출발선으로 사출 + 설치물 파괴,[Attack] Eject enemy pawns to the start line + destroy installations within {p1} spaces ahead of your lead pawn.,[攻撃発動] 自分の先頭駒の前方{p1}マス以内の敵の駒をスタート地点へ射出＋設置物を破壊
+[공격 발동] 내 선두 말 앞 3칸 안의 적 말을 출발선으로 사출 + 설치물 파괴,[Attack] Eject enemy pawns to the start line + destroy installations within 3 spaces ahead of your lead pawn.,[攻撃発動] 自分の先頭駒の前方3マス以内の敵の駒をスタート地点へ射出＋設置物を破壊
+[버프 발동] 이번 굴림 결과를 1~6칸 중 직접 지정,[Buff] Directly choose this roll's result from 1 to 6.,[バフ発動] 今回の出目を1〜6マスの中から直接指定する
+[너프 발동] 상대 1명 {p1}턴 동안 카드·필살기·방어 카드·재굴림 금지,"[Nerf] Ban 1 opponent from cards, skills, guard cards and rerolls for {p1} turn(s).",[デバフ発動] 相手1人を{p1}ターン、カード・必殺技・ガード・振り直し禁止に
+[너프 발동] 상대 1명 2턴 동안 카드·필살기·방어 카드·재굴림 금지,"[Nerf] Ban 1 opponent from cards, skills, guard cards and rerolls for 2 turn(s).",[デバフ発動] 相手1人を2ターン、カード・必殺技・ガード・振り直し禁止に
+눈금 {p1} 이상으로 지나가는 적 말을 출발선으로 사출,Eject any enemy pawn passing through with a roll of {p1} or more to the start line.,出目{p1}以上で通過する敵の駒をスタート地点へ射出する
+눈금 4 이상으로 지나가는 적 말을 출발선으로 사출,Eject any enemy pawn passing through with a roll of 4 or more to the start line.,出目4以上で通過する敵の駒をスタート地点へ射出する
+밟으면 반경 {p1}칸 내 모든 말(내 말 포함)을 출발선으로 사출,"When stepped on, launches all pawns within {p1} spaces (yours too) to the start line.",踏むと半径{p1}マスの全ての駒（自分も）をスタート地点へ射出
+밟으면 반경 2칸 내 모든 말(내 말 포함)을 출발선으로 사출,"When stepped on, launches all pawns within 2 spaces (yours too) to the start line.",踏むと半径2マスの全ての駒（自分も）をスタート地点へ射出
+밟은 말은 강제 정지 · 반경 {p1}칸 안의 함정이 전부 연쇄 발동,Forces the pawn that stepped on it to stop & chain-triggers all traps within {p1} spaces.,踏んだ駒は強制停止し、半径{p1}マス以内の罠がすべて連鎖発動する
+밟은 말은 강제 정지 · 반경 2칸 안의 함정이 전부 연쇄 발동,Forces the pawn that stepped on it to stop & chain-triggers all traps within 2 spaces.,踏んだ駒は強制停止し、半径2マス以内の罠がすべて連鎖発動する
+밟은 적 말 +{p1}칸 미끄러져 전진 + 그 주인에게서 카드 1장 강탈,The enemy pawn that steps on it slides +{p1} spaces forward + steal 1 card from its owner.,踏んだ敵の駒が+{p1}マス滑って前進＋その持ち主からカードを1枚強奪
+밟은 적 말 +3칸 미끄러져 전진 + 그 주인에게서 카드 1장 강탈,The enemy pawn that steps on it slides +3 spaces forward + steal 1 card from its owner.,踏んだ敵の駒が+3マス滑って前進＋その持ち主からカードを1枚強奪
+지나가던 적 말을 그 칸에 강제 정지,Forces a passing enemy pawn to stop on this tile.,通過しようとした敵の駒をそのマスで強制停止させる
+[코너·3R·1회] 내 말 +{p1}칸 전진 / 적 말 출발선으로 사출,[Corner·3R·Once] Your pawn advances +{p1} spaces / Enemy pawn is ejected to the start line.,[コーナー·3R·1回] 自分の駒は+{p1}マス前進 / 敵の駒はスタート地点へ射出
+[코너·3R·1회] 내 말 +5칸 전진 / 적 말 출발선으로 사출,[Corner·3R·Once] Your pawn advances +5 spaces / Enemy pawn is ejected to the start line.,[コーナー·3R·1回] 自分の駒は+5マス前進 / 敵の駒はスタート地点へ射出
+"[코너·3R·1회] 지나가는 상대에게서 카드 1장 강탈, 없으면 그 적 말을 강제 정지","[Corner·3R·Once] Steal 1 card from a passing opponent, or force their pawn to stop if they have none.",[コーナー·3R·1回] 通過した相手からカード1枚強奪、なければその駒を強制停止
+[코너·3R·1회] 밟은 적 말 강제 정지 + 코너 {p1}칸 안의 적 말 끌어오기,[Corner·3R·Once] Forces the enemy pawn stepping here to stop + pulls all enemy pawns within {p1} spaces into the corner.,[コーナー·3R·1回] 踏んだ敵の駒を強制停止＋コーナーから{p1}マス以内の敵の駒を引き寄せる
+[코너·3R·1회] 밟은 적 말 강제 정지 + 코너 2칸 안의 적 말 끌어오기,[Corner·3R·Once] Forces the enemy pawn stepping here to stop + pulls all enemy pawns within 2 spaces into the corner.,[コーナー·3R·1回] 踏んだ敵の駒を強制停止＋コーナーから2マス以内の敵の駒を引き寄せる
+[상단 코너] 소환 · 라운드마다 정방향 1~3칸 · 적 말을 잡으면 처치하고 퇴장,[Top Corner] Summon · Walks 1-3 forward each round; KOs the first enemy pawn and leaves.,[上コーナー] 召喚・毎ラウンド順方向に1~3マス、敵の駒を捕まえたら撃破して退場
+[상단 코너] 소환 · 라운드마다 역방향 1~3칸 · 적 말을 잡으면 처치하고 퇴장,[Top Corner] Summon · Walks 1-3 backward each round; KOs the first enemy pawn and leaves.,[上コーナー] 召喚・毎ラウンド逆方向に1~3マス、敵の駒を捕まえたら撃破して退場
+[상단 코너] 빛 기둥 소환 · 라운드마다 무작위 방향 3~5칸 · 지나는 말 출발선으로 사출 · 함정 파괴 · 3라운드 뒤 소멸,"[Top Corner] Summon a pillar of light · Slides 3-5 random-direction each round · Ejects pawns to the start line, destroys traps · Fades in 3 rounds",[上コーナー] 光の柱を召喚・毎ラウンドランダム方向へ3~5マス・通った駒をスタート地点へ射出し罠を破壊・3ラウンド後に消滅
+[기타 발동] 이번 라운드 동안 모든 말 사출 면역,[Misc] All pawns are immune to ejection for this round.,[その他発動] このラウンドの間、すべての駒が射出無効
+"[버프 발동] 다음 굴림 +1칸 확정 · 더 강화할수록 +N칸, 실패하면 턴 종료","[Buff] Next roll +1 guaranteed · Keep enhancing for +N, but if it fails, your turn ends.",[バフ発動] 次の出目+1マス確定・さらに強化するほど+Nマス、失敗するとターン終了
+먹을수 있는 오이다. 맛있다.,An edible cucumber. Delicious.,食べられるキュウリ。おいしい。
+[너프 발동] 상대 1명의 다음 굴림 -1칸 (최소 1칸),[Nerf] Reduce 1 opponent's next roll by 1 space (minimum 1 space).,[デバフ発動] 相手1人の次の出目を-1マス（最小1マス）
+[공격 발동] 내 말 하나에서 펭귄을 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 사출,[Attack] Fire a penguin from your pawn like an alkkagi shot - every enemy pawn it hits goes to the start line.,[攻撃発動] 自分の駒からペンギンを発射、当たった敵駒を全てスタート地点へ射出
+[3턴] 밟은 모든 말(내 말도)을 그 칸에서 강제 정지 · 한 번 걸려도 사라지지 않음,[3 turns] Every pawn that steps on it (yours too) is forced to stop on that tile - it stays after triggering.,[3ターン] 踏んだ全ての駒（自分の駒も）をそのマスで強制停止させる - 発動しても消えない
+[상단 코너] 팽이 소환 · 라운드마다 가장 가까운 적 말 쪽으로 1칸 · 부딪힌 칸의 모든 말을 출발선으로 사출하고 소멸,[Top corner] Summon a top - each round it moves 1 tile toward the nearest enemy and sends all pawns on the tile it hits to the start.,[上部コーナー] コマを召喚 - ラウンドごとに最も近い敵駒へ1マス、ぶつかったマスの駒を全てスタート地点へ射出して消える
+눈금 {p1} 이상으로 지나가는 적 말을 그 칸에 강제 정지,Forces an enemy pawn passing over at {p1}+ to stop on this tile.,出目{p1}以上で通過する敵の駒をそのマスで強制停止
+눈금 4 이상으로 지나가는 적 말을 그 칸에 강제 정지,Forces an enemy pawn passing over at 4+ to stop on this tile.,出目4以上で通過する敵の駒をそのマスで強制停止
+[코너·3R·여러 번] 지나가는 적 말 주인의 카드 1장 소각 (덱 맨 밑으로),[Corner·3R·Repeating] Burn 1 card from the owner of each passing enemy pawn (to the bottom of the deck).,[コーナー·3R·何度でも] 通過する敵駒の持ち主のカード1枚を焼却（デッキの下へ）
+[버프 발동] 이번 굴림 +{p1}칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸,[Buff] This roll +{p1} · but the first roll of each of your next 3 turns is -3.,[バフ発動] 今回の出目+{p1}・代わりに次の自分の番3回は最初の出目-3
+[공격 방어] 공격 카드를 막고 상대가 쓴 그 카드를 내 손패로 획득,[Attack Guard] Block an attack card and take the card the opponent used into your hand.,[攻撃ガード] 攻撃カードを防ぎ、相手が使ったカードを手札に獲得
+한 변 설치물 파괴,Wipe one side's traps,一辺の設置物破壊
+공격해 온 적 말 사출,Launch the attacker,攻撃してきた敵駒を射出
+적 선두 말 사출,Launch enemy lead,敵の先頭を射出
+빛 기둥 사출 질주,"Beam run, launches all",光の柱で射出疾走

@@ -32,7 +32,7 @@ func test_registered_in_deck_supply_and_live_card_data() -> void:
 	check(CardRegistry.ids_of_type("COUNTER").has(&"CNT_08"), "available in defense supply")
 	check_eq(GameData.text("cards", &"CNT_08", "icon_file"), "CNT_08.png", "approved artwork")
 	check(ResourceLoader.exists("res://assets/cards/CNT_08.png"), "art is imported")
-	check_eq(MainBoard.card_summary(&"CNT_08"), "[잡기 방어] 잡기 1회 회피", "live description: 분류는 설명 머리표에")
+	check_eq(MainBoard.card_summary(&"CNT_08"), "[잡기 방어] 잡기를 1회 회피하고 공격 말과 같은 칸에 함께 선다", "live description: 분류는 설명 머리표에 (1.3.1 기획서 통일 문구)")
 	check_eq(MainBoard.category_label(card), "방어", "모서리 배지는 [방어] (2026-11-04)")
 	for phase: int in [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_ROLL_WAIT, TurnManager.State.PHASE_RESOLUTION]:
 		check(not card.is_playable_in(phase), "not a regular turn/interrupt card")
