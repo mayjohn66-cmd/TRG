@@ -6,7 +6,14 @@ extends TextureRect
 
 const ROLL_TIME: float = 1.05
 const STAGGER: float = 0.035
-const TOTAL_TIME: float = ROLL_TIME + STAGGER * 4.0
+## 1.3.1 (기획서 PRESENTATION 2.3 · HANDOFF-008): 컵이 주사위를 품고 흔들린 뒤(CUP_SHAKE) 펠트 쪽으로 기울어(CUP_LEAD까지)
+## 입구에서 주사위를 쏟아 낸다. 주사위 움직임(pose_at)은 CUP_LEAD 뒤에 시작하고, 쏟고 나면 컵은 다시 바로 선다.
+const CUP_SHAKE: float = 0.34
+const CUP_LEAD: float = 0.46
+const CUP_TILT: float = deg_to_rad(72.0)
+const CUP_HOLD_END: float = CUP_LEAD + 0.30
+const CUP_UPRIGHT_END: float = CUP_LEAD + 0.62
+const TOTAL_TIME: float = CUP_LEAD + ROLL_TIME + STAGGER * 4.0
 const VIEW_SIZE := Vector2(768.0, 300.0)
 const RENDER_SIZE := Vector2i(960, 375)
 const DICE_CENTER := Vector2(288,150)
@@ -15,8 +22,8 @@ const GAP: float = 55.0 / 21.0
 ## 줄 높이 (월드 단위, 1단위 = 화면 42px). 펠트 줄은 가운데보다 아래, 고정 칸 줄은 위.
 const FELT_Y: float = -1.2
 const KEEP_Y: float = 2.0
-## 컵 자리 (굴린 주사위가 여기서 쏟아져 나온다).
-const CUP: Vector3 = Vector3((724.0-320.0)/42.0, 0.0, 0.0)
+## 케이스 화면(800×352, 카메라 x=0)과 이 화면(카메라가 DICE_CENTER에 맞춤)의 월드 좌표 차이: 같은 자리에 그리려고 더한다.
+const CASE_TO_DICE: Vector3 = Vector3(80.0 / 42.0, -2.0 / 42.0, 0.0)
 ## 고정·해제 때 줄을 옮겨 가는 시간.
 const MOVE_TIME: float = 0.16
 static var _yacht_body_mesh: ArrayMesh
@@ -30,6 +37,10 @@ var settled: bool = true
 var kept: Array[bool] = [false, false, false, false, false]
 var _lift: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0]
 var _time: float = TOTAL_TIME
+## 주사위 컵 (케이스에서 떼어 낸 가동 소품): 바닥 가운데가 원점이다.
+var cup: MeshInstance3D
+static var cup_home: Vector3 = Vector3((724.0 - 320.0) / 42.0, 0.0, -2.0)
+static var cup_height: float = 2.9
 
 
 func _init() -> void:
@@ -78,7 +89,58 @@ func _ready() -> void:
 			part.material_override = material
 			die.add_child(part)
 		dice_nodes.append(die)
+	_build_cup()
 	show_values(values)
+
+
+## 케이스에서 떼어 낸 컵을 이 화면에 세운다. 컵 재질은 빛을 받으므로 케이스 화면과 같은 조명을 둔다 (주사위는 빛을 받지 않는 셰이더라 그대로).
+func _build_cup() -> void:
+	var split: Dictionary = YachtCase3D.split_model()
+	cup_home = (split["pivot"] as Vector3) + CASE_TO_DICE
+	cup_height = float(split["height"])
+	var environment := WorldEnvironment.new()
+	environment.environment = Environment.new()
+	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.environment.ambient_light_color = Color("e4eadb")
+	environment.environment.ambient_light_energy = .65
+	render_view.add_child(environment)
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-30, -30, 0)
+	light.light_energy = 1.1
+	render_view.add_child(light)
+	cup = MeshInstance3D.new()
+	cup.name = "DiceCup"
+	cup.mesh = split["cup"]
+	render_view.add_child(cup)
+	cup.transform = cup_pose_at(TOTAL_TIME)
+
+
+## 컵 자세: 흔들기(작게 좌우·앞뒤로 기울며 들썩) → 펠트 쪽(왼쪽)으로 기울여 쏟기 → 잠깐 그대로 → 다시 바로 서기.
+static func cup_pose_at(seconds: float) -> Transform3D:
+	var basis := Basis()
+	var offset := Vector3.ZERO
+	if seconds < CUP_SHAKE:
+		var u: float = seconds / CUP_SHAKE
+		var wobble: float = sin(u * TAU * 3.0) * (1.0 - u * 0.4)
+		basis = Basis(Vector3.UP, wobble * 0.16) * Basis(Vector3.RIGHT, cos(u * TAU * 3.0) * 0.10)
+		offset = Vector3(wobble * 0.14, absf(sin(u * TAU * 3.0)) * 0.18, 0.0)
+	else:
+		var tilt: float
+		if seconds < CUP_LEAD:
+			tilt = CUP_TILT * (1.0 - pow(1.0 - (seconds - CUP_SHAKE) / (CUP_LEAD - CUP_SHAKE), 2.0))
+		elif seconds < CUP_HOLD_END:
+			tilt = CUP_TILT
+		else:
+			tilt = CUP_TILT * (1.0 - smoothstep(CUP_HOLD_END, CUP_UPRIGHT_END, seconds))
+		basis = Basis(Vector3.UP, -tilt)  # 입구(+z)가 왼쪽(-x, 펠트 쪽)으로 돈다
+		offset = Vector3(0.0, 0.0, sin(tilt) * 0.35)  # 기울이며 살짝 들어 올린다
+	return Transform3D(basis, cup_home + offset)
+
+
+## 컵 입구 가운데 (쏟을 때 주사위가 나오는 자리, 이 화면 월드 좌표).
+static func cup_mouth() -> Vector3:
+	var pose: Transform3D = cup_pose_at(CUP_LEAD)
+	return pose * Vector3(0.0, 0.0, cup_height * 0.92)
 
 
 func show_values(faces: Array) -> void:
@@ -104,8 +166,13 @@ func begin(faces: Array, rolled: Array) -> void:
 
 func apply_time(seconds: float) -> void:
 	_time = seconds
+	if cup != null:
+		cup.transform = cup_pose_at(seconds)
 	for index: int in 5:
 		dice_nodes[index].transform = _pose(index)
+		# 굴리는 주사위는 컵 안에 있다가 입구에서 나온다 (흔드는 동안은 컵 속이라 안 보인다)
+		if rolled_indices.has(index) and not kept[index]:
+			dice_nodes[index].visible = values[index] > 0 and seconds - CUP_LEAD - STAGGER * index > 0.0
 	settled = seconds >= TOTAL_TIME
 
 
@@ -142,7 +209,7 @@ func _process(delta: float) -> void:
 
 
 func _pose(index: int) -> Transform3D:
-	var time: float = _time if rolled_indices.has(index) and not kept[index] else TOTAL_TIME
+	var time: float = _time - CUP_LEAD if rolled_indices.has(index) and not kept[index] else TOTAL_TIME
 	var pose: Transform3D = pose_at(time, values[index], index)
 	pose.origin.y += (KEEP_Y - FELT_Y) * smoothstep(0.0, 1.0, _lift[index])
 	return pose
@@ -204,8 +271,8 @@ static func pose_at(seconds: float, face: int, index: int) -> Transform3D:
 		bounce = sin(PI * (u - 0.62) / 0.22) * 0.09
 	else:
 		bounce = sin(PI * (u - 0.84) / 0.16) * 0.025
-	# 오른쪽 컵에서 쏟아져 나와 펠트 위 제자리로 굴러간다 (멀리 있는 주사위일수록 오래 굴러간다)
+	# 기울인 컵의 입구에서 쏟아져 나와 펠트 위 제자리로 굴러간다 (멀리 있는 주사위일수록 오래 굴러간다)
 	var home := Vector3((index - 2) * GAP, FELT_Y, 0.0)
-	var position: Vector3 = home.lerp(CUP, remaining) + Vector3(0.0, bounce, -1.2 * remaining)
+	var position: Vector3 = home.lerp(cup_mouth(), remaining) + Vector3(0.0, bounce, 0.0)
 	var scale: float = 1.0 - 0.18 * remaining
 	return Transform3D(Basis(rotation).scaled(Vector3.ONE * scale), position)

@@ -148,7 +148,7 @@ func _process(delta: float) -> void:
 		return
 	_elapsed += delta
 	_dice_3d.apply_time(_elapsed)
-	if not _landed and _elapsed >= YachtRoll3D.ROLL_TIME * 0.62:
+	if not _landed and _elapsed >= YachtRoll3D.CUP_LEAD + YachtRoll3D.ROLL_TIME * 0.62:  # 컵을 흔들고 기울인 뒤 쏟아진 주사위가 닿는 때
 		_landed = true
 		Sfx.play(&"thud")
 	if _elapsed >= ROLL_SECONDS:

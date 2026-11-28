@@ -122,3 +122,22 @@ func test_chinchiro_faces_are_the_kaiji_four_five_six() -> void:
 			sides[side] = true
 		check(sides.size() == 2, "the two matching sides alternate between dice")
 	check_eq(DiceRoll3D.face_values(&"D6"), [1, 2, 3, 4, 5, 6] as Array[int], "ordinary D6 keeps its original faces")
+
+
+## 1.3.1 (기획서 PRESENTATION 2.3 · HANDOFF-008): 야추 컵은 케이스에서 떼어 낸 가동 소품이고, 기울어진 입구에서 주사위가 나온다.
+func test_yacht_cup_is_a_separate_prop_that_pours_from_its_mouth() -> void:
+	var split: Dictionary = YachtCase3D.split_model()
+	var cup: ArrayMesh = split["cup"]
+	var case_mesh: ArrayMesh = split["case"]
+	check(cup.get_surface_count() >= 2, "cup keeps its leather and lining")
+	for surface: int in case_mesh.get_surface_count():
+		check(not YachtCase3D.CUP_MATERIALS.has(case_mesh.surface_get_material(surface).resource_name), "the case no longer contains the cup")
+	var rest: Transform3D = YachtRoll3D.cup_pose_at(YachtRoll3D.TOTAL_TIME)
+	check(rest.basis.is_equal_approx(Basis()) and rest.origin.is_equal_approx(YachtRoll3D.cup_home), "after pouring the cup stands back in its holder")
+	var pouring: Transform3D = YachtRoll3D.cup_pose_at(YachtRoll3D.CUP_LEAD)
+	check((pouring.basis * Vector3.BACK).x < -0.8, "while pouring the mouth faces the felt on the left")
+	var shaking: Array[Transform3D] = [YachtRoll3D.cup_pose_at(0.05), YachtRoll3D.cup_pose_at(0.15)]
+	check(not shaking[0].is_equal_approx(shaking[1]), "the cup shakes before it tilts")
+	for index: int in 5:
+		var start: Transform3D = YachtRoll3D.pose_at(YachtRoll3D.STAGGER * index, 3, index)
+		check(start.origin.distance_to(YachtRoll3D.cup_mouth()) < 0.3, "die %d leaves from the cup mouth" % index)
