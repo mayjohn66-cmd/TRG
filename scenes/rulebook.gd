@@ -32,7 +32,7 @@ const CARD_SPREAD: int = 7
 const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "잡기", "특수 칸", "보드판", "도구", "말", "카드", "법전", "보급", "초증강"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"capture", &"board", &"board", &"roll", &"pawn_ability", &"play_card", &"lawbook", &"supply", &"super"]
 ## 왼쪽 노트의 큰 그림 크기와 모서리 둥글기.
-const HERO_ART: Vector2 = Vector2(132, 132)
+const HERO_ART: Vector2 = Vector2(108, 108)  # 기본 규칙 노트 (UI-10: 꿀팁까지 첫 화면에)
 const HERO_RADIUS: int = 24
 const ART: Dictionary = {
 	&"start": preload("res://assets/ui/trickcal/rulebook/UI_RULE_START.tres"),
@@ -56,6 +56,30 @@ const GROUP_STARTS: Array[int] = [0, 4]
 const STAGE: Vector2 = Vector2(1366.0, 768.0)
 ## Leave breathing room beyond the painted frame and shadow, without resizing entries.
 const BOOK_SHIFT_X := -24.0
+## 왼쪽 장 버튼 열 (UI-08): 시작 위치, 버튼 크기, 간격.
+const CHAPTER_COLUMN_POS: Vector2 = Vector2(28, 136)
+const CHAPTER_BUTTON: Vector2 = Vector2(196, 60)
+const CHAPTER_SEP: int = 7
+## 아래 [N / 11] 리본 (책 외곽 아래선에 맞춘다).
+const RIBBON_Y: float = 716.0
+const RIBBON_H: float = 40.0
+## 기본 규칙 노트의 메달: 가죽 오른쪽 모서리에서 8px 안쪽.
+const MEDAL_POS: Vector2 = Vector2(720+BOOK_SHIFT_X, 132)
+## 기본 규칙 → 특수 칸 노트의 작은 판 (도감 보드판 상세는 320).
+const BASIC_BOARD_PX: float = 276.0
+## 도감 스크롤 아래 여백 (마지막 줄이 바닥에 붙지 않게).
+const SCROLL_BOTTOM_MARGIN: int = 18
+## 이보다 짧은 상세 팝업은 세로 가운데로 (노트 종이 안쪽 높이 대비).
+const SHORT_DETAIL_RATIO: float = 0.55
+## 상세 팝업 [닫기] 색 (이전·다음 청록과 구분).
+const CLOSE_FILL: Color = Color("5f4630")
+## 카드 장 분류 필터 (UI-01): -1 = 전체.
+const CARD_FILTERS: Array[int] = [-1, GameEnums.CardCategory.COUNTER, GameEnums.CardCategory.INSTANT, GameEnums.CardCategory.TRAP, GameEnums.CardCategory.SUMMON]
+const CARD_FILTER_NAMES: Array[String] = ["전체", "방어", "발동", "함정", "소환"]
+const CARD_FILTER_COLORS: Array[Color] = [Color("c98a14"), Color("4c6ef5"), Color("d98b2b"), Color("8e4aa8"), Color("2f9a85")]
+const CARD_FILTER_Y: float = 140.0
+const CARD_GRID_Y: float = 186.0
+const CARD_GRID_H: float = 528.0
 
 ## 현재 장 번호(0부터).
 var spread: int = 0
@@ -87,8 +111,18 @@ var _note_paper: Control = null
 var _note_column: VBoxContainer = null
 var _dismiss_finger := -2
 var _book_inset: Panel = null
-var _popup_dim: Panel = null
+var _popup_dim: ColorRect = null
 var _popup_close: Button = null
+## 상세 팝업 오른쪽 위 [×].
+var _popup_x: Button = null
+## 상세 본문 여백 (짧은 팝업은 위 여백으로 세로 가운데에 둔다, UI-05).
+var _detail_margin: MarginContainer = null
+## 백업 팝업 오른쪽 위 [×].
+var _save_close: Button = null
+## 카드 장 분류 필터 (UI-01): 알약 줄과 지금 고른 분류 (-1 = 전체).
+var _filter_row: HBoxContainer = null
+var _filter_buttons: Array[Button] = []
+var card_filter: int = -1
 ## 도감 상세 창의 [◀ 이전]·[다음 ▶].
 var _prev_entry: Button = null
 var _next_entry: Button = null
@@ -238,6 +272,13 @@ func _input(event: InputEvent) -> void:
 		point = event.position
 		motion = true
 	else: return
+	# 백업 팝업 바깥을 누르면 닫는다 (UI-03). [기록 백업/복구] 버튼 자체는 열고 닫기를 그대로 맡는다.
+	if pressed and _save_popup != null and _save_popup.visible and not _inside(_save_popup, point):
+		var backup := _stage.get_node_or_null("SaveBackup") as Control
+		if backup == null or not _inside(backup, point):
+			_hide_save_popup()
+			get_viewport().set_input_as_handled()
+			return
 	# Own an outside tap through release so it cannot click behind the modal.
 	if _dismiss_finger != -2:
 		if finger==_dismiss_finger and released:
@@ -375,6 +416,37 @@ func _place(node: Control, pos: Vector2, node_size: Vector2) -> void:
 	_stage.add_child(node)
 
 
+## [닫기]: 이전·다음(청록)과 구분되는 짙은 갈색 + 흰 글씨. 바깥 스킨이 덮지 않게 모든 상태를 직접 칠한다.
+static func _paint_close(button: Button) -> void:
+	for state: String in ["normal", "hover", "pressed", "focus"]:
+		var fill: Color = CLOSE_FILL.lightened(0.12) if state == "hover" else (CLOSE_FILL.darkened(0.2) if state == "pressed" else CLOSE_FILL)
+		button.add_theme_stylebox_override(state, LobbyTheme.style(fill, Color.WHITE, 2, 12, 0, 8) if state != "focus" else StyleBoxEmpty.new())
+	for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(key, Color.WHITE)
+
+
+## 오른쪽 위 동그란 [×] 닫기 버튼.
+static func _x_button(node_name: String, callback: Callable, side: int) -> Button:
+	var button := Button.new()
+	button.name = node_name
+	button.text = "×"
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(side, side)
+	button.size = Vector2(side, side)
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.add_theme_font_size_override("font_size", roundi(side*0.62))
+	button.tooltip_text = "닫기"
+	button.accessibility_name = "닫기"
+	for state: String in ["normal", "hover", "pressed"]:
+		var fill: Color = CLOSE_FILL.lightened(0.12) if state == "hover" else (CLOSE_FILL.darkened(0.2) if state == "pressed" else CLOSE_FILL)
+		button.add_theme_stylebox_override(state, LobbyTheme.style(fill, Color.WHITE, 2, side/2, 0, 0))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	for key: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+		button.add_theme_color_override(key, Color.WHITE)
+	button.pressed.connect(callback)
+	return button
+
+
 ## 한 줄 글 칸: 번역으로 길어지면 칸 폭에 맞을 때까지 글자를 줄인다 (min_px까지, 그래도 넘치면 말줄임).
 static func _shrink_to_fit(label: Label, max_px: int, min_px: int) -> void:
 	var fit := func() -> void:
@@ -467,18 +539,25 @@ func _build_save_tools() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
 	_save_popup.add_child(column)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
+	column.add_child(head)
 	var link: Button = LobbyTheme.small_button("내 전용 링크 복사", _copy_share_link, &"teal", 17)
 	link.name = "CopyShareLink"
 	link.clip_text = true
-	link.custom_minimum_size = Vector2(380, 44)
-	column.add_child(link)
+	link.custom_minimum_size = Vector2(336, 44)
+	link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(link)
+	_save_close = _x_button("CloseSavePopup", _hide_save_popup, 36)
+	_save_close.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(_save_close)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	column.add_child(row)
-	_code_field = LineEdit.new()
+	_code_field = LobbyTheme.input_field("4BGC-A51F", 16, 40)  # 밝은 연두 입력창 (UI-03)
 	_code_field.name = "ShortCodeField"
-	_code_field.placeholder_text = "4BGC-A51F"
-	_code_field.max_length = 40
+	_code_field.add_theme_color_override("font_color", Color("1b4d3e"))
+	_code_field.add_theme_color_override("font_placeholder_color", Color("5a7a68"))
 	_code_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_code_field.custom_minimum_size = Vector2(0, 40)
 	MobileSupport.attach_native_text_input(_code_field, "기록 코드")
@@ -504,6 +583,10 @@ func _toggle_save_popup() -> void:
 	_save_popup.visible = not _save_popup.visible
 	if _save_popup.visible:
 		_save_popup.reset_size()
+
+
+func _hide_save_popup() -> void:
+	_save_popup.visible = false
 
 
 ## 팝업 안내 줄: 비어 있으면 숨겨 팝업 밑이 비지 않게 한다.
@@ -539,21 +622,21 @@ func apply_save_code(code: String) -> bool:
 ## 왼쪽 세로 항목 줄: 현재 탭의 장 4개. 고른 항목은 흰 알약에 점선 느낌의 초록 테두리.
 func _build_list() -> void:
 	_list_box = VBoxContainer.new()
-	_list_box.add_theme_constant_override("separation", 8)
+	_list_box.add_theme_constant_override("separation", CHAPTER_SEP)
 	_list_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_place(_list_box, Vector2(28, 148), Vector2(196, 560))  # 도감 묶음 7장(보드판~초증강)이 들어간다
+	_place(_list_box, CHAPTER_COLUMN_POS, Vector2(196, CHAPTER_BUTTON.y*7+CHAPTER_SEP*6))  # 도감 묶음 7장(보드판~초증강)이 들어간다
 	for index: int in TAB_NAMES.size():
 		var button := Button.new()
 		button.name = "Tab%d" % index
 		button.focus_mode = Control.FOCUS_NONE
-		button.custom_minimum_size = Vector2(196, 66)
+		button.custom_minimum_size = CHAPTER_BUTTON
 		button.pressed.connect(show_spread.bind(index))
 		for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		var disc := Panel.new()
 		disc.name = "Disc"
 		disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		disc.position = Vector2(8, 7)  # 버튼 안쪽 왼쪽 (바깥으로 삐져나오지 않게)
+		disc.position = Vector2(8, (CHAPTER_BUTTON.y-52.0)*0.5)  # 버튼 안쪽 왼쪽 (바깥으로 삐져나오지 않게)
 		disc.size = Vector2(52, 52)
 		button.add_child(disc)
 		var icon := _art(TAB_ART[index], Vector2(40, 40))
@@ -567,7 +650,7 @@ func _build_list() -> void:
 		plate.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.position = Vector2(64, 0)
-		plate.size = Vector2(124, 66)
+		plate.size = Vector2(124, CHAPTER_BUTTON.y)
 		plate.clip_text = true
 		plate.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		_shrink_to_fit(plate, 22, 13)
@@ -582,16 +665,15 @@ func _build_notebook() -> void:
 	_notebook_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notebook_root.size = STAGE
 	_stage.add_child(_notebook_root)
-	_popup_dim = Panel.new()
+	# 상세 팝업 뒤 암전 (UI-02): 도감 화면 전체를 덮는다. 노트(z 10) 아래, 격자·장 버튼·[기록 백업/복구] 위.
+	_popup_dim = ColorRect.new()
 	_popup_dim.name = "NotebookPopupDim"
-	# Reuse the inset's painted alpha contour and nine-slice corners, so the
-	# dim follows the book edge instead of covering it with a square rectangle.
-	var dim_skin: StyleBoxTexture = _book_inset.get_theme_stylebox("panel").duplicate()
-	dim_skin.modulate_color = Color(0, 0, 0, 0.55)
-	_popup_dim.add_theme_stylebox_override("panel", dim_skin)
+	_popup_dim.color = Color(0, 0, 0, 0.65)
+	_popup_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_popup_dim.z_index = 9
 	_popup_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_popup_dim.visible = false
-	_notebook_root.add_child(_popup_dim)
+	add_child(_popup_dim)
 	_notebook_page = Control.new()
 	_notebook_page.name = "NotebookPage"
 	_notebook_page.size = STAGE
@@ -636,10 +718,11 @@ func _build_notebook() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 	var detail_margin := MarginContainer.new()
+	_detail_margin = detail_margin
 	detail_margin.name = "DetailSafeMargins"
 	detail_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_margin.add_theme_constant_override("margin_right", 14)
-	detail_margin.add_theme_constant_override("margin_bottom", 12)
+	detail_margin.add_theme_constant_override("margin_bottom", SCROLL_BOTTOM_MARGIN)
 	scroll.add_child(detail_margin)
 	_left_holder = VBoxContainer.new()
 	_left_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -647,10 +730,14 @@ func _build_notebook() -> void:
 	detail_margin.add_child(_left_holder)
 	var medal := _art(&"badge", Vector2(80, 96))
 	medal.name = "RulebookBadge"
-	_place_note(medal, Vector2(740, 124), Vector2(80, 96))
+	_place_note(medal, MEDAL_POS, Vector2(80, 96))
 	_medal = medal
 	_popup_close = LobbyTheme.small_button("닫기", func() -> void: show_entry(-1), &"gray", 16)
 	_popup_close.name = "CloseEntry"
+	_paint_close(_popup_close)
+	_popup_x = _x_button("ClosePopupX", func() -> void: show_entry(-1), 44)
+	_popup_x.visible = false
+	_notebook_page.add_child(_popup_x)
 	_popup_close.visible = false
 	_place_note(_popup_close, Vector2(708, 668), Vector2(84, 36))
 	_prev_entry = LobbyTheme.small_button("◀ 이전", func() -> void: show_entry(wrapi(entry - 1, 0, entry_count())), &"teal", 22)
@@ -681,6 +768,7 @@ func _build_cards_area() -> void:
 	_summary_banner.add_child(_summary_label)
 	_place(_summary_banner, Vector2(GRID_POS.x, 140), Vector2(GRID_SIZE.x, 40))
 	_summary_banner.visible = false
+	_build_card_filters()
 	_right_scroll = ScrollContainer.new()
 	_right_scroll.name = "CatalogScroll"
 	_right_scroll.set_meta(MobileSupport.CUSTOM_DRAG_SCROLL, true)
@@ -692,14 +780,72 @@ func _build_cards_area() -> void:
 	_right_scroll.add_child(_right_holder)
 
 
+## 카드 장 위쪽 분류 필터 알약 5개 (UI-01). 카드 장에서만 요약 배너 자리에 선다.
+func _build_card_filters() -> void:
+	_filter_row = HBoxContainer.new()
+	_filter_row.name = "CardFilterRow"
+	_filter_row.add_theme_constant_override("separation", 8)
+	_filter_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_filter_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_place(_filter_row, Vector2(GRID_POS.x, CARD_FILTER_Y), Vector2(GRID_SIZE.x, 38))
+	_filter_row.visible = false
+	var tall: float = 44.0 if MobileSupport.touch_mode() else 36.0
+	for index: int in CARD_FILTERS.size():
+		var pill := Button.new()
+		pill.name = "CardFilter%d" % index
+		pill.focus_mode = Control.FOCUS_NONE
+		pill.custom_minimum_size = Vector2(150, tall)
+		pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		pill.add_theme_font_size_override("font_size", 17)
+		pill.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		pill.text = "%s %d장" % [CARD_FILTER_NAMES[index], card_filter_count(CARD_FILTERS[index])]
+		pill.pressed.connect(set_card_filter.bind(CARD_FILTERS[index]))
+		_filter_row.add_child(pill)
+		_filter_buttons.append(pill)
+	_paint_filters()
+
+
+## 분류의 카드 수 (도감 격자에 놓이는 카드 종류 수, 덱 구성에서 센다. -1은 전체).
+static func card_filter_count(category: int) -> int:
+	var total: int = 0
+	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+		if category < 0 or int(CardRegistry.get_card(card_id).category) == category:
+			total += 1
+	return total
+
+
+## 카드 장의 분류를 바꾼다: 격자를 그 분류로 다시 그리고 맨 위로, 상세 팝업의 이전·다음도 그 안에서만 돈다.
+func set_card_filter(category: int) -> void:
+	card_filter = category
+	_paint_filters()
+	if spread == CARD_SPREAD:
+		show_spread(CARD_SPREAD)
+
+
+func _paint_filters() -> void:
+	for index: int in _filter_buttons.size():
+		var pill: Button = _filter_buttons[index]
+		var tone: Color = CARD_FILTER_COLORS[index]
+		var active: bool = CARD_FILTERS[index] == card_filter
+		var fill: Color = tone if active else Color("fffaf0")
+		var text: Color = Color.WHITE if active else tone.darkened(0.15)
+		pill.add_theme_stylebox_override("normal", LobbyTheme.style(fill, tone, 2, 18, 0, 6))
+		pill.add_theme_stylebox_override("hover", LobbyTheme.style(fill.lightened(0.1) if active else tone.lightened(0.85), tone, 2, 18, 0, 6))
+		pill.add_theme_stylebox_override("pressed", LobbyTheme.style(tone.darkened(0.1), tone, 2, 18, 0, 6))
+		pill.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		for key: String in ["font_color", "font_hover_color", "font_focus_color"]:
+			pill.add_theme_color_override(key, text)
+		pill.add_theme_color_override("font_pressed_color", Color.WHITE)
+
+
 func _build_ribbon() -> void:
 	var ribbon := Ribbon.new()
 	_ribbon = ribbon
-	_place(ribbon, Vector2(560+BOOK_SHIFT_X, 706), Vector2(246, 56))
+	_place(ribbon, Vector2(560+BOOK_SHIFT_X, RIBBON_Y), Vector2(246, RIBBON_H))
 	_page_label = HubKit.outlined("", 20, Color.WHITE, Color("8a3a0a"), 5)
 	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_page_label.position = Vector2(30, 10)
+	_page_label.position = Vector2(30, (RIBBON_H-30.0)*0.5)
 	_page_label.size = Vector2(186, 30)
 	ribbon.add_child(_page_label)
 
@@ -768,8 +914,14 @@ func _fit_summary(text: String) -> void:
 ## 도감은 위쪽 한 줄 요약 + 화면에 맞춘 격자 (노트는 항목을 누를 때만 팝업).
 func _apply_group_layout(group: int) -> void:
 	var catalog: bool = group == 1
-	_summary_banner.visible = catalog
-	if catalog:
+	var filters: bool = spread == CARD_SPREAD
+	_summary_banner.visible = catalog and not filters
+	_filter_row.visible = filters
+	if filters:
+		_right_scroll.position = Vector2(GRID_POS.x, CARD_GRID_Y)
+		_right_scroll.size = Vector2(_book_inset.size.x-74.0, CARD_GRID_H)
+		_filter_row.size.x = _book_inset.size.x-74.0
+	elif catalog:
 		var text: String = L10n.t(str(BANNERS.get(spread, "")))
 		if spread == LAW_SPREAD:
 			text = L10n.tf("%s (수집: %d/%d)", [text, PlayerSave.law_count(), LawRegistry.ALL_IDS.size()])
@@ -797,9 +949,9 @@ func _layout_notebook() -> void:
 	_notebook_root.position = Vector2.ZERO
 	_notebook_root.size = Vector2(_book_outer.size.x+210.0,STAGE.y)
 	_popup_dim.visible = popup
-	_popup_dim.position = _book_inset.position
-	_popup_dim.size = _book_inset.size
 	_popup_close.visible = popup
+	_popup_x.visible = popup
+	_medal.visible = not popup  # 팝업에서는 오른쪽 위 [×] 자리라 숨긴다 (UI-08)
 	_prev_entry.visible = popup and entry_count() > 1
 	_next_entry.visible = popup and entry_count() > 1
 	_list_box.z_index = 0
@@ -818,7 +970,8 @@ func _layout_notebook() -> void:
 		_note_column.position = Vector2(36,30)
 		_note_column.scale = Vector2.ONE
 		_note_column.size = extent-Vector2(72,142)
-		_medal.position = Vector2(extent.x-104,16)
+		_popup_x.position = Vector2(extent.x-44-22,22)
+		_popup_x.size = Vector2(44,44)
 		_popup_close.position = extent-Vector2(192,96)
 		_popup_close.size = Vector2(160,64)
 		_next_entry.position = extent-Vector2(192+184,96)
@@ -834,7 +987,7 @@ func _layout_notebook() -> void:
 		_note_column.position = Vector2(290+BOOK_SHIFT_X,168)
 		_note_column.scale = Vector2.ONE
 		_note_column.size = Vector2(484,520)
-		_medal.position = Vector2(740+BOOK_SHIFT_X,124)  # 위쪽 [기본 규칙]·[도감] 탭 아래 (겹치지 않게)
+		_medal.position = MEDAL_POS  # 노트 가죽 모서리 안쪽 8px (UI-08)
 		_popup_close.position = Vector2(708+BOOK_SHIFT_X,668)
 		_popup_close.size = Vector2(84,36)
 	_note_column.add_theme_constant_override("separation", 12 if popup else 6)
@@ -880,9 +1033,27 @@ func show_entry(index: int) -> void:
 	for node: Control in _detail(data):
 		_left_holder.add_child(node)
 	_left_scroll.scroll_vertical = 0
+	_detail_margin.add_theme_constant_override("margin_top", 0)
 	for tile_index: int in _tiles.size():
 		_paint_tile(_tiles[tile_index], tile_index == entry)
 	_layout_notebook()
+	_balance_detail.call_deferred(entry, spread)
+
+
+## 짧은 상세 팝업 (본문이 노트 안 높이의 55% 미만)은 위에 여백을 줘 세로 가운데에 둔다 (아래 절반이 텅 비지 않게).
+func _balance_detail(for_entry: int, for_spread: int) -> void:
+	if not is_inside_tree():
+		return
+	await get_tree().process_frame
+	if not is_instance_valid(_detail_margin) or entry != for_entry or spread != for_spread:
+		return
+	if group_of(spread) != 1 or entry < 0:
+		return
+	var body: float = _left_holder.get_combined_minimum_size().y
+	var room: float = _left_scroll.size.y
+	if room <= 0.0 or body >= _note_paper.size.y * SHORT_DETAIL_RATIO or body >= room:
+		return
+	_detail_margin.add_theme_constant_override("margin_top", floori((room - body - SCROLL_BOTTOM_MARGIN) * 0.5))
 
 
 func _rebuild_tiles() -> void:
@@ -907,6 +1078,11 @@ func _rebuild_tiles() -> void:
 		grid.add_child(tile)
 		_tiles.append(tile)
 	_right_holder.add_child(grid)
+	var bottom := Control.new()
+	bottom.name = "ScrollBottomMargin"
+	bottom.custom_minimum_size = Vector2(0, SCROLL_BOTTOM_MARGIN - _right_holder.get_theme_constant("separation"))
+	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_right_holder.add_child(bottom)
 
 
 ## 오른쪽 제목 타일: 동그란 그림 + 이름만. 고르면 흰 바탕에 굵은 테두리.
@@ -1014,30 +1190,31 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	marker.visible = false
 	holder.add_child(marker)
 	holder.set_meta("marker", marker)
-	# 오른쪽 위 공통 화살표로 다른 보드판의 법전을 본다.
+	# 오른쪽 위 [보드 1/4 ▶] 칩으로 다른 보드판의 법전을 본다 (UI-06: 무엇을 넘기는지 바로 보이게).
 	if data.has("augment") and _has_board_variant(AugmentRegistry.get_def(data["augment"])):
 		var switch_button := Button.new()
 		switch_button.name = "BoardVariantButton"
-		switch_button.custom_minimum_size = Vector2(44, 44)
-		switch_button.size = Vector2(44, 44)
+		var chip_h: float = 44.0 if MobileSupport.touch_mode() else 36.0
+		switch_button.focus_mode = Control.FOCUS_NONE
 		switch_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		switch_button.text = L10n.tf("보드 %d/%d ▶", [_shown_variant_board(data) + 1, BoardCatalog.ids().size()])
+		switch_button.add_theme_font_size_override("font_size", 15)
 		var tint := Color("ffe8a3")
-		switch_button.add_theme_stylebox_override("normal", VISUALS.disc(tint))
-		switch_button.add_theme_stylebox_override("hover", VISUALS.disc(tint.lightened(0.45)))
-		switch_button.add_theme_stylebox_override("pressed", VISUALS.disc(tint.darkened(0.18)))
+		var edge := Color("c98a14")
+		switch_button.add_theme_stylebox_override("normal", LobbyTheme.style(tint, edge, 2, int(chip_h*0.5), 0, 4))
+		switch_button.add_theme_stylebox_override("hover", LobbyTheme.style(tint.lightened(0.45), edge, 2, int(chip_h*0.5), 0, 4))
+		switch_button.add_theme_stylebox_override("pressed", LobbyTheme.style(tint.darkened(0.18), edge, 2, int(chip_h*0.5), 0, 4))
+		switch_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		for key: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+			switch_button.add_theme_color_override(key, Color("6b4a2a"))
 		var destination: String = L10n.t("%s 보기" % BoardCatalog.name_of(BoardCatalog.ids()[_next_variant_board(data)]))
 		switch_button.tooltip_text = destination
 		switch_button.accessibility_name = destination
-		var icon := HubArt.icon(&"next")
-		icon.name = "BoardVariantIcon"
-		icon.position = Vector2(8, 8)
-		icon.size = Vector2(28, 28)
-		switch_button.add_child(icon)
 		switch_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		switch_button.offset_left = -50.0
+		switch_button.offset_left = -6.0 - 108.0
 		switch_button.offset_right = -6.0
 		switch_button.offset_top = 6.0
-		switch_button.offset_bottom = 50.0
+		switch_button.offset_bottom = 6.0 + chip_h
 		switch_button.z_index = 8
 		switch_button.pressed.connect(_flip_board_variant.bind(holder, data, on_pick, compact))
 		holder.add_child(switch_button)
@@ -1292,6 +1469,7 @@ func _picture(data: Dictionary, extent: Vector2) -> Control:
 func _detail(data: Dictionary) -> Array[Control]:
 	var nodes: Array[Control] = []
 	var enlarged := group_of(spread)==1 and entry>=0
+	_left_holder.add_theme_constant_override("separation", 10 if enlarged else 6)
 	var hero_size := Vector2(288,288) if enlarged else HERO_ART
 	var tone: Color = data.get("tone", Color("5fc1e8"))
 	var hero := HBoxContainer.new()
@@ -1426,9 +1604,10 @@ func _chip(text: String, tone: Color) -> Control:
 func _table(rows: Array, tone: Color) -> Control:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_theme_stylebox_override("panel", _box(Color("fffdf6"), tone.lightened(0.2), 2, 16, 0, 10))
+	var tight: bool = group_of(spread) == 0  # 기본 규칙 노트는 촘촘하게 (UI-10)
+	panel.add_theme_stylebox_override("panel", _box(Color("fffdf6"), tone.lightened(0.2), 2, 16, 0, 8 if tight else 10))
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	column.add_theme_constant_override("separation", 3 if tight else 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(column)
 	for row_index: int in rows.size():
@@ -1459,7 +1638,7 @@ func _table(rows: Array, tone: Color) -> Control:
 		key.text = str(cells[0])
 		key.add_theme_font_size_override("font_size", 16)
 		key.add_theme_color_override("font_color", tone.darkened(0.45))
-		key.custom_minimum_size = Vector2(150, 0)
+		key.custom_minimum_size = Vector2(124 if tight else 150, 0)
 		key.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		key.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		key.add_theme_stylebox_override("normal", _box(tone.lightened(0.62), Color(0, 0, 0, 0), 0, 10, 0, 6))
@@ -1487,7 +1666,7 @@ func _table_rule(tone: Color) -> ColorRect:
 ## 요점 목록: 줄마다 색 점 + 짧은 문장.
 func _points(points: Array, tone: Color) -> Control:
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	column.add_theme_constant_override("separation", 3 if group_of(spread) == 0 else 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for point: Variant in points:
 		var line := HBoxContainer.new()
@@ -1603,7 +1782,7 @@ func _ch_turn() -> Dictionary:
 	return {"title": "한 턴", "entries": [
 		{"title": "한눈에 보기", "art": &"turn", "tone": Color("86d94f"), "chips": ["4단계"],
 			"summary": "한 턴은 [b]카드 → 굴리기 → 말 고르기 → 정산[/b] 순서예요. 모두 한 번씩 하면 한 라운드예요.",
-			"rows": [["① 카드", "굴리기 전에 한 장 (안 써도 돼요) · 필살기도 이때"], ["② 굴리기", "도구를 굴려 칸 수 결정"], ["③ 말 고르기", "그 칸 수만큼 움직일 말 선택"], ["④ 정산", "도착한 칸의 효과 · 잡기 · 업기"]],
+			"rows": [["① 카드", "굴리기 전에 카드 1장 · 필살기 사용 (안 써도 돼요)"], ["② 굴리기", "도구를 굴려 칸 수 결정"], ["③ 말 고르기", "그 칸 수만큼 움직일 말 선택"], ["④ 정산", "도착한 칸의 효과 · 잡기 · 업기"]],
 			"points": ["친선전에서는 단계마다 제한 시간이 있고, 시간이 지나면 자동으로 진행돼요 (컴퓨터 대전은 제한 없음)", "라운드 끝에는 소환된 중립 기물이 움직여요"],
 			"tip": "카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하려면 아껴 두세요."},
 		{"title": "카드 한 장", "art": &"play_card", "number": 1, "tone": Color("f0c14e"), "chips": ["굴리기 전", "턴당 1장"],
@@ -1638,7 +1817,7 @@ func _ch_turn() -> Dictionary:
 ## 특수 칸: 모든 보드판에 공통인 칸 (출발·코너·반환점·부스터 발판·함정). 보드마다 다른 칸은 도감 → 보드판.
 func _ch_tiles() -> Dictionary:
 	var make_board: Callable = func() -> Control:
-		return _board_panel(BoardSpec.board_id)
+		return _board_panel(BoardSpec.board_id, BASIC_BOARD_PX)
 	var kinds: Array = _board_kind_rows()
 	return {"title": "특수 칸", "entries": [
 		{"title": "한눈에 보기", "art": &"board", "tone": Color("86d94f"), "chips": ["%d칸" % BoardSpec.tile_count, "반시계"],
@@ -1697,7 +1876,7 @@ func _ch_boards() -> Dictionary:
 
 
 ## 보드판 그림: 작은 판(번호·색 칸·옷장 이동선)과 범례. 범례는 판 밖에 두어 이동선과 겹치지 않는다 (넓으면 옆, 좁으면 아래).
-func _board_panel(board_id: StringName) -> Control:
+func _board_panel(board_id: StringName, board_px: float = 320.0) -> Control:
 	var row := HFlowContainer.new()
 	row.name = "BoardPanel"
 	row.add_theme_constant_override("h_separation", 18)
@@ -1705,7 +1884,7 @@ func _board_panel(board_id: StringName) -> Control:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var board := MiniBoard.new()
 	board.board_id = board_id
-	board.custom_minimum_size = Vector2(340, 340)
+	board.custom_minimum_size = Vector2(board_px, board_px)
 	board.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_child(board)
 	var legend := VBoxContainer.new()
@@ -1802,19 +1981,19 @@ func _ch_capture() -> Dictionary:
 			"summary": "공격받으면 [b]막을 수 있는 방어 카드가 있을 때만[/b] 쓸지 물어봐요. 막는 공격에 따라 네 가지로 나뉘어요.",
 			"rows": [["잡기 방어", "적 말이 내 말을 잡을 때"], ["공격 방어", "공격 카드에 맞을 때"], ["함정 방어", "내 말이 남의 함정에 걸렸을 때"], ["만능 방어", "어떤 공격이든"]],
 			"points": ["공격 하나에 방어 카드 한 장", "공격한 사람의 차례 안에서만 막을 수 있어요. [그냥 맞기]를 고르면 그 공격엔 다시 못 써요", "막으면 맞기 직전으로 돌아가요: 말 위치·출발 여부·업기·감옥·보호막과 그 공격으로 오른 기록", "내 함정·내 카드·초증강으로 입은 피해는 공격이 아니라서 막을 수 없어요", "알고리즘 밴에 걸려 있으면 방어 창이 열리지 않아요"]},
-		{"title": "잡기 방어", "art": &"defense", "tone": Color("74c0fc"), "chips": ["잡기만"],
+		{"title": "잡기 방어", "art": &"capture", "tone": Color("74c0fc"), "chips": ["잡기만"],
 			"summary": "적 말이 내 말이 선 칸에 멈춰 [b]잡으려 할 때[/b] 써요. 막으면 내 말은 그 자리에 남아요.",
 			"rows": [["막는 방법", "카드마다 달라요: 그냥 피하기 · 덤으로 카드 1장 · 잡으러 온 적 말을 출발선으로 되돌려 보내기"], ["업힌 말", "한 번 막으면 함께 잡히던 말도 모두 무사해요"]],
 			"points": ["공격 카드·함정에는 쓸 수 없어요", "잡으러 온 말을 되돌려 보내는 카드는 그 말이 아직 보드 위에 있어야 써요"]},
-		{"title": "공격 방어", "art": &"defense", "tone": Color("74c0fc"), "chips": ["공격 카드만"],
+		{"title": "공격 방어", "art": &"attack", "tone": Color("74c0fc"), "chips": ["공격 카드만"],
 			"summary": "상대가 낸 [b]공격 카드[/b]에 맞았을 때 써요. 그 카드의 효과가 나에게 오지 않아요.",
 			"rows": [["막는 방법", "카드마다 달라요: 그냥 피하기 · 덤으로 카드 1장 · 맞은 카드를 내 손패로 빼앗기 · 공격자에게 반사"], ["반사", "공격자의 선두 말이 출발선으로 (해킹은 공격자가 그대로 받아요)"]],
 			"points": ["잡기와 함정은 막지 못해요", "밴·스킵·이의 있음 같은 [b][너프 발동][/b] 카드는 공격이 아니라서 막지 못해요"]},
-		{"title": "함정 방어", "art": &"defense", "tone": Color("74c0fc"), "chips": ["남의 함정"],
+		{"title": "함정 방어", "art": &"trap_card", "tone": Color("74c0fc"), "chips": ["남의 함정"],
 			"summary": "내 말이 [b]남이 깐 함정[/b]에 걸렸을 때 써요. 내 차례에 걸려도 쓸 수 있어요.",
 			"rows": [["막는 방법", "카드마다 달라요: 함정을 부수고 더 전진 · 함정을 무효로 하고 설치자의 카드 빼앗기 · 그 함정 카드를 내 손패로"]],
 			"points": ["내가 깐 함정에 내 말이 걸린 건 막을 수 없어요"]},
-		{"title": "만능 방어", "art": &"defense", "tone": Color("74c0fc"), "chips": ["무엇이든"],
+		{"title": "만능 방어", "texture": TextureCache.fetch("res://assets/cards/CNT_01.png"), "art": &"defense", "tone": Color("74c0fc"), "chips": ["무엇이든"],
 			"summary": "잡기·공격 카드·함정 [b]어떤 공격이든[/b] 막아요. 공격한 사람의 차례를 통째로 되감고 그 차례를 끝내요.",
 			"points": ["되감아도 손패는 돌아오지 않아요", "순위가 정해졌다면 순위도 그때로 돌아가요"]},
 		{"title": "함정 카드", "art": &"trap_card", "tone": Color("b197fc"), "chips": ["칸에 깔기", "한 칸에 하나"],
@@ -1959,6 +2138,8 @@ func _ch_cards() -> Dictionary:
 	]
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
 		var card: BaseCard = CardRegistry.get_card(card_id)
+		if card_filter >= 0 and int(card.category) != card_filter:
+			continue  # 위쪽 분류 필터 (UI-01)
 		var tone: Color = Color("f0c14e")
 		# 쓰는 때(굴리기 전 / 공격받을 때)는 종류마다 같아 카드 쓰는 법 한 곳에만 적고, 카드마다는 세부 종류만 보여 준다 (1.3.1)
 		var rows: Array = []
